@@ -917,10 +917,21 @@ body {
   }
 }
 
+.resume-grid {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 2rem;
+  align-items: start;
+}
+
 /* ==========================================================================
    MOBILE & RESPONSIVE LAYOUT OVERRIDES (max-width: 768px)
    ========================================================================== */
 @media (max-width: 768px) {
+  .resume-grid {
+    grid-template-columns: 1fr;
+  }
+
   .app-wrapper {
     flex-direction: column;
   }
