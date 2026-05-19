@@ -22,7 +22,9 @@ import {
   Layers,
   Clock,
   Sparkles,
-  Download
+  Download,
+  AlertTriangle,
+  RefreshCw
 } from 'lucide-react';
 
 const BACKEND_URL = 'http://127.0.0.1:8000';
@@ -41,7 +43,13 @@ const getStatusColors = (status) => {
 
 function App() {
   // --- STATE DECLARATIONS ---
-  const [activeSection, setActiveSection] = useState('dashboard'); // 'dashboard' | 'extractor' | 'resumes' | 'settings'
+  const [activeSection, setActiveSection] = useState('welcome'); // 'welcome' | 'dashboard' | 'extractor' | 'resumes' | 'settings'
+  const [toast, setToast] = useState(null);
+  
+  const showToast = (message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
   const [apiKey, setApiKey] = useState(() => {
     const saved = localStorage.getItem('gemini_api_key');
     return (saved && saved !== 'undefined' && saved !== 'null') ? saved : '';
@@ -665,8 +673,110 @@ function App() {
     return matchesSearch && matchesWorkMode && matchesJobType;
   });
 
+  if (activeSection === 'welcome') {
+    return (
+      <div className="app-wrapper welcome-screen" style={{ flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: '2rem', backgroundImage: 'radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.15) 0%, transparent 50%)' }}>
+        {/* Toast */}
+        {toast && (
+          <div className={`toast fade-in ${toast.type}`} style={{ position: 'fixed', top: '20px', right: '20px', zIndex: 1000, padding: '1rem 1.5rem', borderRadius: '8px', background: toast.type === 'error' ? 'rgba(239, 68, 68, 0.15)' : toast.type === 'warning' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.15)', border: `1px solid ${toast.type === 'error' ? 'rgba(239, 68, 68, 0.3)' : toast.type === 'warning' ? 'rgba(245, 158, 11, 0.3)' : 'rgba(16, 185, 129, 0.3)'}`, color: toast.type === 'error' ? '#f87171' : toast.type === 'warning' ? '#fbbf24' : '#34d399', display: 'flex', alignItems: 'center', gap: '0.75rem', boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)', backdropFilter: 'blur(10px)' }}>
+            {toast.type === 'error' ? <AlertTriangle size={18} /> : toast.type === 'warning' ? <Info size={18} /> : <Check size={18} />}
+            <span style={{ fontSize: '0.9rem', fontWeight: '500' }}>{toast.message}</span>
+          </div>
+        )}
+
+        <div className="glass-panel fade-in" style={{ maxWidth: '600px', width: '100%', textAlign: 'center', padding: '3rem 2rem', position: 'relative', overflow: 'hidden' }}>
+          <div className="glow-effect" style={{ position: 'absolute', top: '-50%', left: '-50%', width: '200%', height: '200%', background: 'radial-gradient(circle, rgba(139, 92, 246, 0.1) 0%, transparent 70%)', zIndex: 0, pointerEvents: 'none' }}></div>
+          
+          <div style={{ position: 'relative', zIndex: 1 }}>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
+              <div className="icon-box" style={{ width: '80px', height: '80px', borderRadius: '24px', background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(139, 92, 246, 0.2) 100%)', border: '1px solid rgba(139, 92, 246, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Briefcase size={40} style={{ color: '#a78bfa' }} />
+              </div>
+            </div>
+            
+            <h1 style={{ fontSize: '2.5rem', fontWeight: '800', background: 'linear-gradient(to right, #818cf8, #c084fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '1rem', letterSpacing: '-0.02em' }}>JobCollector</h1>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem', marginBottom: '2.5rem', lineHeight: '1.6' }}>
+              Your cyber-luxe portal for AI-powered job application tracking, resume matching, and automated insight extraction.
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', textAlign: 'left', marginBottom: '2.5rem', background: 'rgba(15, 23, 42, 0.4)', padding: '1.5rem', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+              <h3 style={{ fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#94a3b8', marginBottom: '0.5rem' }}>Quick Setup</h3>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <label style={{ fontSize: '0.85rem', color: '#cbd5e1' }}>Gemini API Key (Optional)</label>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <div className="input-group" style={{ flex: 1, margin: 0 }}>
+                    <div className="input-icon"><Settings size={16} /></div>
+                    <input 
+                      type={showPassword ? "text" : "password"} 
+                      placeholder="Paste your key here..."
+                      value={tempApiKey}
+                      onChange={(e) => setTempApiKey(e.target.value)}
+                      style={{ paddingRight: '2.5rem' }}
+                    />
+                    <button 
+                      type="button" 
+                      onClick={() => setShowPassword(!showPassword)}
+                      style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}
+                    >
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                  <button 
+                    className="btn btn-secondary" 
+                    onClick={async () => {
+                      if (!tempApiKey.trim()) { showToast("Please enter an API Key first", "warning"); return; }
+                      setIsTestingKey(true);
+                      try {
+                        const res = await fetch(`${BACKEND_URL}/api/validate-key`, { method: 'POST', headers: { 'X-Gemini-Key': tempApiKey } });
+                        const data = await res.json();
+                        if (res.ok && data.valid) {
+                          setApiKey(tempApiKey);
+                          localStorage.setItem('gemini_api_key', tempApiKey);
+                          showToast("API Key validated and saved successfully!", "success");
+                        } else {
+                          showToast(data.detail || "Invalid API Key", "error");
+                        }
+                      } catch (err) {
+                        showToast("Connection failed", "error");
+                      } finally {
+                        setIsTestingKey(false);
+                      }
+                    }}
+                    disabled={isTestingKey}
+                  >
+                    {isTestingKey ? <RefreshCw size={18} className="spin" /> : <Check size={18} />}
+                    Verify
+                  </button>
+                </div>
+                {apiKey && <div style={{ fontSize: '0.8rem', color: '#34d399', display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.25rem' }}><Check size={12} /> Active Key Detected</div>}
+              </div>
+            </div>
+
+            <button 
+              className="btn btn-primary" 
+              style={{ width: '100%', padding: '1rem', fontSize: '1.1rem', justifyContent: 'center', background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)', boxShadow: '0 10px 25px rgba(99, 102, 241, 0.3)' }}
+              onClick={() => setActiveSection('dashboard')}
+            >
+              <Sparkles size={20} />
+              Initiate Dashboard Portal
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="app-wrapper">
+      {/* GLOBAL TOAST */}
+      {toast && (
+        <div className={`toast fade-in ${toast.type}`} style={{ position: 'fixed', top: '20px', right: '20px', zIndex: 1000, padding: '1rem 1.5rem', borderRadius: '8px', background: toast.type === 'error' ? 'rgba(239, 68, 68, 0.15)' : toast.type === 'warning' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.15)', border: `1px solid ${toast.type === 'error' ? 'rgba(239, 68, 68, 0.3)' : toast.type === 'warning' ? 'rgba(245, 158, 11, 0.3)' : 'rgba(16, 185, 129, 0.3)'}`, color: toast.type === 'error' ? '#f87171' : toast.type === 'warning' ? '#fbbf24' : '#34d399', display: 'flex', alignItems: 'center', gap: '0.75rem', boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)', backdropFilter: 'blur(10px)' }}>
+          {toast.type === 'error' ? <AlertTriangle size={18} /> : toast.type === 'warning' ? <Info size={18} /> : <Check size={18} />}
+          <span style={{ fontSize: '0.9rem', fontWeight: '500' }}>{toast.message}</span>
+        </div>
+      )}
+
       {/* SIDEBAR NAVIGATION */}
       <aside className="sidebar">
         <div className="brand" style={{ padding: '0 0.5rem', marginBottom: '1rem' }}>

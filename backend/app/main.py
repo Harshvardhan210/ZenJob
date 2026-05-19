@@ -36,13 +36,37 @@ app = FastAPI(
 )
 
 # 2. Configure CORS
+allowed_origins_env = os.getenv("ALLOWED_ORIGINS")
+if allowed_origins_env:
+    origins = [o.strip() for o in allowed_origins_env.split(",") if o.strip()]
+else:
+    origins = [
+        "http://localhost:5173",
+        "http://localhost:5000",
+        "http://localhost:3000",
+        "http://localhost:8000",
+        "capacitor://localhost",
+        "http://localhost",
+    ]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allows all origins for development
-    allow_credentials=False,
+    allow_origins=origins,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# 2.5. HTTP Security Headers Middleware
+@app.middleware("http")
+async def add_security_headers(request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Content-Security-Policy"] = "default-src 'self' 'unsafe-inline' 'unsafe-eval' https://fonts.googleapis.com https://fonts.gstatic.com; img-src 'self' data: blob: http: https:;"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    return response
 
 # 3. Directories Configuration
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -50,6 +74,18 @@ UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 RESUMES_DIR = os.path.join(UPLOAD_DIR, "resumes")
 os.makedirs(RESUMES_DIR, exist_ok=True)
+
+def verify_path_safety(file_path: str, base_directory: str = UPLOAD_DIR) -> bool:
+    """
+    Checks that the given file path is strictly located within the base_directory
+    to prevent directory traversal attacks.
+    """
+    try:
+        resolved_path = os.path.abspath(file_path)
+        resolved_base = os.path.abspath(base_directory)
+        return os.path.commonpath([resolved_base, resolved_path]) == resolved_base
+    except Exception:
+        return False
 
 # Mount the uploads directory to serve images statically to the React frontend
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
@@ -110,6 +146,22 @@ async def extract_job(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Uploaded file must be an image (PNG, JPG, JPEG, WEBP, etc.)"
         )
+        
+    # Verify file size limit (10MB) to prevent Denial of Service (DoS)
+    try:
+        file.file.seek(0, 2)
+        file_size = file.file.tell()
+        file.file.seek(0)
+        if file_size > 10 * 1024 * 1024:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Uploaded image flyer size exceeds the 10MB limit."
+            )
+    except HTTPException as he:
+        raise he
+    except Exception:
+        # Fallback if seek/tell fails on certain file wrappers
+        pass
         
     # Generate unique filename to avoid overwrites
     file_ext = os.path.splitext(file.filename)[1] or ".png"
@@ -346,12 +398,18 @@ def delete_job(job_id: int):
             # Strip leading slash if present
             if img_rel_path.startswith("/"):
                 img_rel_path = img_rel_path[1:]
-            full_img_path = os.path.join(BASE_DIR, img_rel_path)
-            if os.path.exists(full_img_path):
-                try:
-                    os.remove(full_img_path)
-                except Exception:
-                    pass  # Fail silently if image deletion fails, focus on database delete
+            full_img_path = os.path.abspath(os.path.join(BASE_DIR, img_rel_path))
+            if verify_path_safety(full_img_path, UPLOAD_DIR):
+                if os.path.exists(full_img_path):
+                    try:
+                        os.remove(full_img_path)
+                    except Exception:
+                        pass  # Fail silently if image deletion fails, focus on database delete
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid or unauthorized image file path"
+                )
                     
         success = database.delete_job(job_id)
         if not success:
@@ -661,12 +719,18 @@ def delete_resume_api(resume_id: int):
             # Strip leading slash if present
             if rel_filepath.startswith("/"):
                 rel_filepath = rel_filepath[1:]
-            full_path = os.path.join(BASE_DIR, rel_filepath)
-            if os.path.exists(full_path):
-                try:
-                    os.remove(full_path)
-                except Exception:
-                    pass  # Fail silently on disk removal, proceed to DB removal
+            full_path = os.path.abspath(os.path.join(BASE_DIR, rel_filepath))
+            if verify_path_safety(full_path, UPLOAD_DIR):
+                if os.path.exists(full_path):
+                    try:
+                        os.remove(full_path)
+                    except Exception:
+                        pass  # Fail silently on disk removal, proceed to DB removal
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid or unauthorized resume file path"
+                )
                     
         # 2. Delete the record from DB
         was_active = resume.get("is_active") == 1
