@@ -949,14 +949,29 @@ body {
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     z-index: 50;
     margin-bottom: 0;
+    gap: 1rem;
+  }
+
+  .sidebar .brand {
+    flex-shrink: 0;
   }
 
   .sidebar-nav {
     flex-direction: row;
     margin-top: 0;
-    gap: 0.25rem;
+    gap: 0.35rem;
     width: auto;
-    flex-grow: 0;
+    flex-grow: 1;
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Hide Firefox scrollbar */
+    -ms-overflow-style: none;  /* Hide IE/Edge scrollbar */
+    justify-content: flex-end;
+  }
+
+  .sidebar-nav::-webkit-scrollbar {
+    display: none; /* Hide Chrome/Safari/Opera scrollbar */
   }
 
   .nav-item {
@@ -964,6 +979,7 @@ body {
     font-size: 0.85rem;
     gap: 0.4rem;
     border-radius: 8px;
+    flex-shrink: 0; /* Prevent icons/text from compressing */
   }
 
   .nav-item.active {
@@ -1001,6 +1017,23 @@ body {
     width: 95%;
     max-width: 95vw;
     margin: auto;
+  }
+
+  /* Optimized horizontal scrollable elements for mobile - Hide ugly horizontal scrollbars */
+  .table-responsive {
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Hide Firefox scrollbar */
+    -ms-overflow-style: none;  /* Hide IE/Edge scrollbar */
+  }
+
+  .table-responsive::-webkit-scrollbar {
+    display: none; /* Hide Chrome/Safari/Opera scrollbar */
+  }
+
+  .jobs-table th, 
+  .jobs-table td {
+    padding: 0.75rem 0.85rem;
+    font-size: 0.85rem;
   }
 }
 
