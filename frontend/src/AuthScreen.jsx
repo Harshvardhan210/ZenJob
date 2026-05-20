@@ -3,7 +3,7 @@ import { Mail, Lock, UserPlus, LogIn, AlertTriangle, Check, User } from 'lucide-
 import { auth } from './firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from 'firebase/auth';
 
-function AuthScreen() {
+function AuthScreen({ setIsRegistering }) {
   const [isLogin, setIsLogin] = useState(true);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -33,6 +33,7 @@ function AuthScreen() {
         await signInWithEmailAndPassword(auth, email, password);
         // App.jsx will automatically detect the auth state change and hide this screen.
       } else {
+        if (setIsRegistering) setIsRegistering(true);
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         // Set the display name on the newly created user profile
         await updateProfile(userCredential.user, { displayName: name.trim() });
@@ -61,6 +62,7 @@ function AuthScreen() {
       showToast(message);
     } finally {
       setLoading(false);
+      if (setIsRegistering) setIsRegistering(false);
     }
   };
 

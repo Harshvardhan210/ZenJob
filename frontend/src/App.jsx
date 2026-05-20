@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { auth } from './firebase';
 import { onAuthStateChanged, signOut, getIdToken } from 'firebase/auth';
 import AuthScreen from './AuthScreen';
+import LandingPage from './LandingPage';
 import { 
   Briefcase, 
   UploadCloud, 
@@ -49,6 +50,8 @@ function App() {
   // --- STATE DECLARATIONS ---
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [showLanding, setShowLanding] = useState(true);
+  const [isRegistering, setIsRegistering] = useState(false);
   const [activeSection, setActiveSection] = useState('welcome'); // 'welcome' | 'dashboard' | 'extractor' | 'resumes' | 'settings'
   const [toast, setToast] = useState(null);
   
@@ -125,6 +128,7 @@ function App() {
   const [tempBackendUrl, setTempBackendUrl] = useState(backendUrl);
 
   // --- LIFECYCLE ---
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
@@ -711,8 +715,11 @@ function App() {
     return <div style={{ minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#0f172a', color: '#818cf8' }}><RefreshCw size={32} className="spin" /></div>;
   }
 
-  if (!user) {
-    return <AuthScreen />;
+  if (!user || isRegistering) {
+    if (showLanding) {
+      return <LandingPage onGetStarted={() => setShowLanding(false)} />;
+    }
+    return <AuthScreen setIsRegistering={setIsRegistering} />;
   }
 
   if (activeSection === 'welcome') {
@@ -846,7 +853,7 @@ function App() {
           
           <div style={{ flex: 1 }}></div>
 
-          <div className="nav-item" onClick={() => signOut(auth)} style={{ marginTop: 'auto', color: '#f87171' }}>
+          <div className="nav-item" onClick={() => { setShowLanding(true); signOut(auth); }} style={{ marginTop: 'auto', color: '#f87171' }}>
             <LogOut className="icon" size={20} />
             <span>Sign Out</span>
           </div>
