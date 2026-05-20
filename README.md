@@ -147,5 +147,26 @@ The exported Excel spreadsheet isn't just a basic CSV. It's an executive-level r
 
 ---
 
+## 📅 Project Development Timeline
+
+* **Phase 1: Foundation & AI Extraction**
+  * Initial build with React, Vite, and FastAPI.
+  * Local SQLite database configuration.
+  * Integration with Gemini Pro Vision for multi-modal image, URL, and text job extraction.
+  * Capacitor Native Android wrapper implementation.
+* **Phase 2: Analytics & Tracking Enhancements**
+  * Advanced AI resume matching and compatibility scoring.
+  * Enhanced Kanban/List job tracking with visual status indicators.
+  * Professional styled Excel export with drop-down data validation and conditional formatting.
+* **Phase 3: Cloud Migration & Security (Recent)**
+  * Complete migration to **Firebase Cloud Firestore** for scalable, cloud-native storage.
+  * Implementation of **Firebase Authentication** for secure, multi-tenant user access.
+  * Secure management of Firebase Admin SDK credentials and environment variables.
+* **Phase 4: Polish & User Flow**
+  * Authentication UI/UX refinements (glassmorphism login/register screens).
+  * Seamless authentication routing and automatic sign-out flow on registration.
+
+---
+
 ## 📄 License
 This project is licensed under the MIT License. Created with ❤️ by [Harshvardhan](https://github.com/Harshvardhan210).
