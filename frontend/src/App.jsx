@@ -1,4 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { auth } from './firebase';
+import { onAuthStateChanged, signOut, getIdToken } from 'firebase/auth';
+import AuthScreen from './AuthScreen';
 import { 
   Briefcase, 
   UploadCloud, 
@@ -24,7 +27,8 @@ import {
   Sparkles,
   Download,
   AlertTriangle,
-  RefreshCw
+  RefreshCw,
+  LogOut
 } from 'lucide-react';
 
 const BACKEND_URL = 'http://127.0.0.1:8000';
@@ -43,6 +47,8 @@ const getStatusColors = (status) => {
 
 function App() {
   // --- STATE DECLARATIONS ---
+  const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const [activeSection, setActiveSection] = useState('welcome'); // 'welcome' | 'dashboard' | 'extractor' | 'resumes' | 'settings'
   const [toast, setToast] = useState(null);
   
@@ -120,8 +126,16 @@ function App() {
 
   // --- LIFECYCLE ---
   useEffect(() => {
-    fetchJobs();
-    fetchResumes();
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setAuthLoading(false);
+      if (currentUser) {
+        // Initial fetches when logged in
+        fetchJobs();
+        fetchResumes();
+      }
+    });
+    return () => unsubscribe();
   }, []);
 
   useEffect(() => {
@@ -132,11 +146,24 @@ function App() {
     }
   }, [activeSection, apiKey, backendUrl]);
 
+  // --- AUTH HELPERS ---
+  const getAuthHeaders = async () => {
+    if (!auth.currentUser) return {};
+    try {
+      const token = await getIdToken(auth.currentUser, /* forceRefresh */ false);
+      return { 'Authorization': `Bearer ${token}` };
+    } catch (e) {
+      console.error('Failed to get auth token', e);
+      return {};
+    }
+  };
+
   // --- API CALLS ---
   const fetchJobs = async () => {
     setLoadingJobs(true);
     try {
-      const response = await fetch(`${BACKEND_URL}/api/jobs`);
+      const authHeaders = await getAuthHeaders();
+      const response = await fetch(`${BACKEND_URL}/api/jobs`, { headers: authHeaders });
       if (response.ok) {
         const data = await response.json();
         setJobs(data);
@@ -190,7 +217,8 @@ function App() {
     try {
       setUploadStatus('extracting');
       
-      const headers = {};
+      const authHeaders = await getAuthHeaders();
+      const headers = { ...authHeaders };
       if (apiKey) {
         headers['X-Gemini-Key'] = apiKey;
       }
@@ -242,9 +270,8 @@ function App() {
     try {
       setUploadStatus('extracting');
       
-      const headers = {
-        'Content-Type': 'application/json'
-      };
+      const authHeaders = await getAuthHeaders();
+      const headers = { 'Content-Type': 'application/json', ...authHeaders };
       if (apiKey) {
         headers['X-Gemini-Key'] = apiKey;
       }
@@ -296,9 +323,8 @@ function App() {
     try {
       setUploadStatus('extracting');
       
-      const headers = {
-        'Content-Type': 'application/json'
-      };
+      const authHeaders = await getAuthHeaders();
+      const headers = { 'Content-Type': 'application/json', ...authHeaders };
       if (apiKey) {
         headers['X-Gemini-Key'] = apiKey;
       }
@@ -347,12 +373,11 @@ function App() {
     e.preventDefault();
     setIsSaving(true);
     try {
+      const authHeaders = await getAuthHeaders();
       const url = `${BACKEND_URL}/api/jobs?image_path=${encodeURIComponent(savedImagePath)}`;
       const response = await fetch(url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json', ...authHeaders },
         body: JSON.stringify(editedData)
       });
 
@@ -378,8 +403,10 @@ function App() {
   const handleDeleteJob = async (id) => {
     if (!window.confirm("Are you sure you want to delete this job posting? This will also remove its stored image.")) return;
     try {
+      const authHeaders = await getAuthHeaders();
       const response = await fetch(`${BACKEND_URL}/api/jobs/${id}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: authHeaders
       });
       if (response.ok) {
         fetchJobs();
@@ -394,6 +421,7 @@ function App() {
 
   const handleStatusChange = async (job, newStatus) => {
     try {
+      const authHeaders = await getAuthHeaders();
       const updatedJobPayload = {
         company_name: job.company_name,
         job_role: job.job_role,
@@ -412,9 +440,7 @@ function App() {
       const url = `${BACKEND_URL}/api/jobs/${job.id}`;
       const response = await fetch(url, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json', ...authHeaders },
         body: JSON.stringify(updatedJobPayload)
       });
 
@@ -435,7 +461,8 @@ function App() {
 
   const handleExportExcel = async () => {
     try {
-      const response = await fetch(`${BACKEND_URL}/api/export`);
+      const authHeaders = await getAuthHeaders();
+      const response = await fetch(`${BACKEND_URL}/api/export`, { headers: authHeaders });
       if (!response.ok) {
         throw new Error("Could not fetch the generated Excel report");
       }
@@ -470,7 +497,8 @@ function App() {
   const fetchResumes = async () => {
     setLoadingResumes(true);
     try {
-      const response = await fetch(`${BACKEND_URL}/api/resumes`);
+      const authHeaders = await getAuthHeaders();
+      const response = await fetch(`${BACKEND_URL}/api/resumes`, { headers: authHeaders });
       if (response.ok) {
         const data = await response.json();
         setResumes(data);
@@ -494,8 +522,10 @@ function App() {
     formData.append('file', fileToUpload);
     
     try {
+      const authHeaders = await getAuthHeaders();
       const response = await fetch(`${BACKEND_URL}/api/resumes`, {
         method: 'POST',
+        headers: authHeaders,
         body: formData
       });
       
@@ -518,8 +548,10 @@ function App() {
 
   const handleMakeResumeActive = async (resumeId) => {
     try {
+      const authHeaders = await getAuthHeaders();
       const response = await fetch(`${BACKEND_URL}/api/resumes/${resumeId}/active`, {
-        method: 'POST'
+        method: 'POST',
+        headers: authHeaders
       });
       if (response.ok) {
         fetchResumes();
@@ -535,8 +567,10 @@ function App() {
   const handleDeleteResume = async (resumeId) => {
     if (!window.confirm("Are you sure you want to delete this resume? This will also remove the stored file from disk.")) return;
     try {
+      const authHeaders = await getAuthHeaders();
       const response = await fetch(`${BACKEND_URL}/api/resumes/${resumeId}`, {
-        method: 'DELETE'
+        method: 'DELETE',
+        headers: authHeaders
       });
       if (response.ok) {
         fetchResumes();
@@ -673,6 +707,14 @@ function App() {
     return matchesSearch && matchesWorkMode && matchesJobType;
   });
 
+  if (authLoading) {
+    return <div style={{ minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#0f172a', color: '#818cf8' }}><RefreshCw size={32} className="spin" /></div>;
+  }
+
+  if (!user) {
+    return <AuthScreen />;
+  }
+
   if (activeSection === 'welcome') {
     return (
       <div className="app-wrapper welcome-screen" style={{ flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: '2rem', backgroundImage: 'radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.15) 0%, transparent 50%)' }}>
@@ -800,6 +842,13 @@ function App() {
           <div className={`nav-item ${activeSection === 'settings' ? 'active' : ''}`} onClick={() => { setTempApiKey(apiKey); setActiveSection('settings'); }}>
             <Settings className="icon" size={20} />
             <span>Settings</span>
+          </div>
+          
+          <div style={{ flex: 1 }}></div>
+
+          <div className="nav-item" onClick={() => signOut(auth)} style={{ marginTop: 'auto', color: '#f87171' }}>
+            <LogOut className="icon" size={20} />
+            <span>Sign Out</span>
           </div>
         </nav>
       </aside>

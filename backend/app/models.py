@@ -20,7 +20,8 @@ class JobExtraction(BaseModel):
     suggestions: Optional[List[str]] = Field(default=None, description="Suggestions to improve matching")
 
 class JobDB(JobExtraction):
-    id: int
+    id: str
+    user_id: str
     image_path: Optional[str] = None
     extracted_at: str
 
@@ -31,7 +32,8 @@ class UrlExtractionRequest(BaseModel):
     url: str = Field(..., description="URL of the job posting to scrape and parse")
 
 class ResumeDB(BaseModel):
-    id: int
+    id: str
+    user_id: str
     filename: str
     filepath: str
     file_size: int

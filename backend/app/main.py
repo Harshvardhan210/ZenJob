@@ -11,7 +11,8 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 load_dotenv(os.path.join(BASE_DIR, ".env"))
 
 
-from fastapi import FastAPI, UploadFile, File, Header, HTTPException, status
+from fastapi import FastAPI, UploadFile, File, Header, HTTPException, status, Depends
+from .auth import get_current_user
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import StreamingResponse
@@ -97,13 +98,13 @@ def startup_event():
 
 # 5. API Endpoints
 
-def inject_resume_match(extracted_data: dict, x_gemini_key: Optional[str] = None) -> dict:
+def inject_resume_match(extracted_data: dict, user_id: str, x_gemini_key: Optional[str] = None) -> dict:
     """
     Checks the database for an active resume. If one exists, calls extraction.match_resume_to_jd
     and injects match metrics into the extraction output dictionary.
     """
     try:
-        resumes = database.get_all_resumes()
+        resumes = database.get_all_resumes(user_id)
         active_resume = None
         for r in resumes:
             if r.get("is_active") == 1 or r.get("is_active") == True:
@@ -133,7 +134,8 @@ def inject_resume_match(extracted_data: dict, x_gemini_key: Optional[str] = None
 @app.post("/api/extract", response_model=models.JobExtraction)
 async def extract_job(
     file: UploadFile = File(...),
-    x_gemini_key: Optional[str] = Header(None, alias="X-Gemini-Key")
+    x_gemini_key: Optional[str] = Header(None, alias="X-Gemini-Key"),
+    user_id: str = Depends(get_current_user)
 ):
     """
     Uploads a job poster image/screenshot, saves it locally,
@@ -197,7 +199,7 @@ async def extract_job(
         # Let's return a dictionary that matches JobExtraction but also has the "image_path"!
         response_dict = extracted_data.model_dump()
         response_dict["image_path"] = f"/uploads/{unique_filename}"
-        response_dict = inject_resume_match(response_dict, x_gemini_key=x_gemini_key)
+        response_dict = inject_resume_match(response_dict, user_id=user_id, x_gemini_key=x_gemini_key)
         return response_dict
         
     except ValueError as ve:
@@ -219,7 +221,8 @@ async def extract_job(
 @app.post("/api/extract-text", response_model=models.JobExtraction)
 def extract_job_text(
     request: models.TextExtractionRequest,
-    x_gemini_key: Optional[str] = Header(None, alias="X-Gemini-Key")
+    x_gemini_key: Optional[str] = Header(None, alias="X-Gemini-Key"),
+    user_id: str = Depends(get_current_user)
 ):
     """
     Accepts raw job description text and runs Gemini AI to extract structured job details.
@@ -236,7 +239,7 @@ def extract_job_text(
             custom_api_key=x_gemini_key
         )
         response_dict = extracted_data.model_dump()
-        response_dict = inject_resume_match(response_dict, x_gemini_key=x_gemini_key)
+        response_dict = inject_resume_match(response_dict, user_id=user_id, x_gemini_key=x_gemini_key)
         return response_dict
     except ValueError as ve:
         raise HTTPException(
@@ -252,7 +255,8 @@ def extract_job_text(
 @app.post("/api/extract-url", response_model=models.JobExtraction)
 def extract_job_url(
     request: models.UrlExtractionRequest,
-    x_gemini_key: Optional[str] = Header(None, alias="X-Gemini-Key")
+    x_gemini_key: Optional[str] = Header(None, alias="X-Gemini-Key"),
+    user_id: str = Depends(get_current_user)
 ):
     """
     Accepts a URL, scrapes the webpage for text content, and runs Gemini AI to extract structured job details.
@@ -298,7 +302,7 @@ def extract_job_url(
             extracted_data.application_link = request.url
             
         response_dict = extracted_data.model_dump()
-        response_dict = inject_resume_match(response_dict, x_gemini_key=x_gemini_key)
+        response_dict = inject_resume_match(response_dict, user_id=user_id, x_gemini_key=x_gemini_key)
         return response_dict
         
     except requests.exceptions.RequestException as e:
@@ -318,10 +322,10 @@ def extract_job_url(
         )
 
 @app.get("/api/jobs", response_model=List[models.JobDB])
-def get_jobs():
+def get_jobs(user_id: str = Depends(get_current_user)):
     """Retrieves all collected job applications."""
     try:
-        return database.get_all_jobs()
+        return database.get_all_jobs(user_id)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -329,14 +333,15 @@ def get_jobs():
         )
 
 @app.post("/api/jobs", response_model=models.JobDB)
-def create_job(job: models.JobExtraction, image_path: Optional[str] = None):
+def create_job(job: models.JobExtraction, image_path: Optional[str] = None, user_id: str = Depends(get_current_user)):
     """Saves a confirmed job application to the database."""
     try:
         job_dict = job.model_dump()
         job_dict["image_path"] = image_path
+        job_dict["user_id"] = user_id
         
-        job_id = database.add_job(job_dict)
-        saved_job = database.get_job_by_id(job_id)
+        job_id = database.add_job(job_dict, user_id)
+        saved_job = database.get_job_by_id(job_id, user_id)
         if not saved_job:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -350,10 +355,10 @@ def create_job(job: models.JobExtraction, image_path: Optional[str] = None):
         )
 
 @app.put("/api/jobs/{job_id}", response_model=models.JobDB)
-def update_job(job_id: int, job: models.JobExtraction, image_path: Optional[str] = None):
+def update_job(job_id: str, job: models.JobExtraction, image_path: Optional[str] = None, user_id: str = Depends(get_current_user)):
     """Updates an existing job application in the database."""
     try:
-        existing = database.get_job_by_id(job_id)
+        existing = database.get_job_by_id(job_id, user_id)
         if not existing:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -363,15 +368,16 @@ def update_job(job_id: int, job: models.JobExtraction, image_path: Optional[str]
         job_dict = job.model_dump()
         # Keep previous image path if not provided
         job_dict["image_path"] = image_path if image_path is not None else existing.get("image_path")
+        job_dict["user_id"] = user_id
         
-        success = database.update_job(job_id, job_dict)
+        success = database.update_job(job_id, job_dict, user_id)
         if not success:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to update job in database"
             )
             
-        updated = database.get_job_by_id(job_id)
+        updated = database.get_job_by_id(job_id, user_id)
         return updated
     except HTTPException as he:
         raise he
@@ -382,10 +388,10 @@ def update_job(job_id: int, job: models.JobExtraction, image_path: Optional[str]
         )
 
 @app.delete("/api/jobs/{job_id}")
-def delete_job(job_id: int):
+def delete_job(job_id: str, user_id: str = Depends(get_current_user)):
     """Deletes a job application and its associated image file."""
     try:
-        job = database.get_job_by_id(job_id)
+        job = database.get_job_by_id(job_id, user_id)
         if not job:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -411,7 +417,7 @@ def delete_job(job_id: int):
                     detail="Invalid or unauthorized image file path"
                 )
                     
-        success = database.delete_job(job_id)
+        success = database.delete_job(job_id, user_id)
         if not success:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -427,14 +433,14 @@ def delete_job(job_id: int):
         )
 
 @app.get("/api/export")
-def export_jobs_excel():
+def export_jobs_excel(user_id: str = Depends(get_current_user)):
     """
     Fetches all jobs in the SQLite database, compiles them into a beautiful, 
     highly styled, formatted Excel spreadsheet using Pandas & OpenPyXL, and 
     returns it as a streaming download.
     """
     try:
-        jobs = database.get_all_jobs()
+        jobs = database.get_all_jobs(user_id)
         if not jobs:
             # Return a simple empty excel instead of error, or prompt user
             df = pd.DataFrame(columns=[
@@ -593,7 +599,7 @@ def export_jobs_excel():
 # --- RESUME MANAGEMENT API ENDPOINTS ---
 
 @app.post("/api/resumes", response_model=models.ResumeDB)
-async def upload_resume(file: UploadFile = File(...)):
+async def upload_resume(file: UploadFile = File(...), user_id: str = Depends(get_current_user)):
     """
     Uploads a resume file (PDF, DOC, DOCX), saves it to the local resumes directory,
     and stores its metadata in the database.
@@ -639,18 +645,19 @@ async def upload_resume(file: UploadFile = File(...)):
 
     # 4. Check if this is the first resume (make it active by default)
     try:
-        existing_resumes = database.get_all_resumes()
+        existing_resumes = database.get_all_resumes(user_id)
         is_active = 1 if len(existing_resumes) == 0 else 0
         
         resume_payload = {
             "filename": filename,
             "filepath": f"/uploads/resumes/{disk_filename}",
             "file_size": file_size,
-            "is_active": is_active
+            "is_active": is_active,
+            "user_id": user_id
         }
         
         resume_id = database.add_resume(resume_payload)
-        saved_resume = database.get_resume_by_id(resume_id)
+        saved_resume = database.get_resume_by_id(resume_id, user_id)
         if not saved_resume:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -667,10 +674,10 @@ async def upload_resume(file: UploadFile = File(...)):
         )
 
 @app.get("/api/resumes", response_model=List[models.ResumeDB])
-def get_resumes():
+def get_resumes(user_id: str = Depends(get_current_user)):
     """Retrieves all uploaded resumes."""
     try:
-        return database.get_all_resumes()
+        return database.get_all_resumes(user_id)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -678,22 +685,22 @@ def get_resumes():
         )
 
 @app.post("/api/resumes/{resume_id}/active", response_model=models.ResumeDB)
-def make_resume_active(resume_id: int):
+def make_resume_active(resume_id: str, user_id: str = Depends(get_current_user)):
     """Sets a specific resume as active and deactivates all others."""
     try:
-        resume = database.get_resume_by_id(resume_id)
+        resume = database.get_resume_by_id(resume_id, user_id)
         if not resume:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Resume with ID {resume_id} not found"
             )
-        success = database.set_active_resume(resume_id)
+        success = database.set_active_resume(resume_id, user_id)
         if not success:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to update active resume in database"
             )
-        return database.get_resume_by_id(resume_id)
+        return database.get_resume_by_id(resume_id, user_id)
     except HTTPException as he:
         raise he
     except Exception as e:
@@ -703,10 +710,10 @@ def make_resume_active(resume_id: int):
         )
 
 @app.delete("/api/resumes/{resume_id}")
-def delete_resume_api(resume_id: int):
+def delete_resume_api(resume_id: str, user_id: str = Depends(get_current_user)):
     """Deletes a resume record from the database and its physical file from disk."""
     try:
-        resume = database.get_resume_by_id(resume_id)
+        resume = database.get_resume_by_id(resume_id, user_id)
         if not resume:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -734,7 +741,7 @@ def delete_resume_api(resume_id: int):
                     
         # 2. Delete the record from DB
         was_active = resume.get("is_active") == 1
-        success = database.delete_resume(resume_id)
+        success = database.delete_resume(resume_id, user_id)
         if not success:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -743,10 +750,10 @@ def delete_resume_api(resume_id: int):
             
         # 3. If the deleted resume was active, set the next most recent one as active
         if was_active:
-            remaining = database.get_all_resumes()
+            remaining = database.get_all_resumes(user_id)
             if remaining:
                 # Set the first item (most recent upload) as active
-                database.set_active_resume(remaining[0]["id"])
+                database.set_active_resume(remaining[0]["id"], user_id)
                 
         return {"status": "success", "message": f"Resume {resume_id} deleted successfully"}
     except HTTPException as he:
