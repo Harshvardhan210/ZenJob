@@ -29,7 +29,8 @@ import {
   Download,
   AlertTriangle,
   RefreshCw,
-  LogOut
+  LogOut,
+  User
 } from 'lucide-react';
 
 const BACKEND_URL = 'http://127.0.0.1:8000';
@@ -152,6 +153,31 @@ function App() {
 
   // --- LIFECYCLE ---
 
+  const resetAppState = () => {
+    setJobs([]);
+    setResumes([]);
+    setExtractedData(null);
+    setUploadStatus('idle');
+    setResumeUploadStatus('idle');
+    setImagePreview(null);
+    setSavedImagePath('');
+    setEditedData({
+      company_name: '',
+      job_role: '',
+      email: '',
+      phone: '',
+      location: '',
+      job_type: 'Full-time',
+      work_mode: 'Remote',
+      skills: [],
+      experience_required: '',
+      application_link: '',
+      additional_notes: '',
+      application_status: 'Applied',
+      match_score: null
+    });
+  };
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
@@ -160,6 +186,9 @@ function App() {
         // Initial fetches when logged in
         fetchJobs();
         fetchResumes();
+      } else {
+        // Clear all state when logged out
+        resetAppState();
       }
     });
     return () => unsubscribe();
@@ -905,6 +934,59 @@ function App() {
           <Briefcase className="brand-icon" size={28} />
           <span>JobCollector</span>
         </div>
+
+        {/* USER PROFILE SECTION */}
+        {user && (
+          <div className="glass-panel" style={{
+            margin: '0.5rem 1rem 1.5rem 1rem',
+            padding: '1rem',
+            borderRadius: '16px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.75rem',
+            background: 'rgba(255, 255, 255, 0.03)',
+            border: '1px solid var(--border-glass)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <div style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '12px',
+                background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                fontSize: '1.1rem',
+                fontWeight: 700,
+                boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)'
+              }}>
+                {user.displayName ? user.displayName.charAt(0).toUpperCase() : (user.email ? user.email.charAt(0).toUpperCase() : <User size={20} />)}
+              </div>
+              <div style={{ overflow: 'hidden' }}>
+                <div style={{
+                  fontSize: '0.9rem',
+                  fontWeight: 600,
+                  color: 'white',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis'
+                }}>
+                  {user.displayName || 'Collector User'}
+                </div>
+                <div style={{
+                  fontSize: '0.75rem',
+                  color: 'var(--text-secondary)',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis'
+                }}>
+                  {user.email}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <nav className="sidebar-nav">
           <div className={`nav-item ${activeSection === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveSection('dashboard')}>
