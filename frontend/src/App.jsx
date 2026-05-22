@@ -983,7 +983,7 @@ function App() {
             </div>
           </div>
 
-          <div className="nav-item" onClick={() => { setShowLanding(true); signOut(auth); }} style={{ color: '#f87171' }}>
+          <div className="nav-item logout-item" onClick={() => { setShowLanding(true); signOut(auth); }}>
             <LogOut className="icon" size={20} />
             <span>Sign Out</span>
           </div>

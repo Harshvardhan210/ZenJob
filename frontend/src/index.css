@@ -141,6 +141,17 @@ body {
   transform: scale(1.1);
 }
 
+.logout-item {
+  color: #f87171 !important;
+  margin-top: 1rem;
+}
+
+.logout-item:hover {
+  background: rgba(239, 68, 68, 0.08) !important;
+  color: #fca5a5 !important;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
 /* Stat Cards */
 .stats-grid {
   display: grid;
@@ -999,6 +1010,109 @@ body {
 /* ==========================================================================
    MOBILE & RESPONSIVE LAYOUT OVERRIDES (max-width: 768px)
    ========================================================================== */
+/* --- SIDEBAR COMPONENTS (GLOBAL/DESKTOP) --- */
+
+/* Sidebar Profile */
+.sidebar-profile {
+  margin: 0.5rem 1rem 1.5rem 1rem;
+  padding: 1.25rem 1rem;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-glass);
+}
+
+.profile-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.2rem;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+  flex-shrink: 0;
+}
+
+.profile-info {
+  overflow: hidden;
+}
+
+.profile-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: white;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+
+.profile-email {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* AI Status Badge */
+.ai-status-badge {
+  margin: 1rem;
+  padding: 0.85rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  transition: all 0.3s ease;
+}
+
+.ai-status-badge.active {
+  border: 1px solid rgba(16, 185, 129, 0.15);
+}
+
+.ai-status-badge.inactive {
+  border: 1px solid rgba(239, 160, 68, 0.15);
+}
+
+.status-dot-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.35rem;
+}
+
+.status-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.active .status-dot {
+  background: #34d399;
+  box-shadow: 0 0 10px rgba(52, 211, 153, 0.4);
+}
+
+.inactive .status-dot {
+  background: #fbbf24;
+  box-shadow: 0 0 10px rgba(251, 191, 36, 0.4);
+}
+
+.status-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.02em;
+}
+
+.status-text {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+
 /* ==========================================================================
    RESPONSIVE LAYOUT OVERRIDES
    ========================================================================== */
@@ -1037,6 +1151,12 @@ body {
   .profile-info {
     display: none;
     /* Hide text on Tablet to save space in header row */
+  }
+
+  .profile-avatar {
+    width: 38px;
+    height: 38px;
+    font-size: 1rem;
   }
 
   .sidebar-nav {
