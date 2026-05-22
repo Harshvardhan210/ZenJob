@@ -1638,19 +1638,16 @@ function App() {
                 </div>
               </div>
 
-              <div className="form-group" style={{ marginBottom: '2rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <label style={{ fontSize: '0.9rem', fontWeight: 600, color: '#d1d5db' }}>Backend Server URL</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  placeholder="Enter FastAPI Backend URL (e.g. http://192.168.1.X:8000)"
-                  value={tempBackendUrl}
-                  onChange={e => setTempBackendUrl(e.target.value)}
-                  style={{ width: '100%', fontSize: '0.95rem' }}
-                />
-                <div className="settings-info" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
-                  Set the IP address or host URL of your FastAPI backend server. For Android emulators, use <code>http://10.0.2.2:8000</code>. For physical Android devices, use your computer's Wi-Fi IP address (e.g., <code>http://192.168.1.15:8000</code>).
-                </div>
+              <div className="form-group" style={{ marginBottom: '2rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', background: 'rgba(99, 102, 241, 0.05)', padding: '1.25rem', borderRadius: '12px', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
+                <label style={{ fontSize: '1rem', fontWeight: 600, color: '#a5b4fc', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Info size={18} /> How to get a Gemini API Key
+                </label>
+                <ol style={{ margin: 0, paddingLeft: '1.5rem', color: '#cbd5e1', fontSize: '0.9rem', lineHeight: 1.6, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <li>Go to <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" style={{ color: '#818cf8', textDecoration: 'underline' }}>Google AI Studio</a>.</li>
+                  <li>Sign in with your Google account.</li>
+                  <li>Click on <strong>"Create API key"</strong>.</li>
+                  <li>Copy the key and paste it into the field above, then click <strong>Save Changes</strong>.</li>
+                </ol>
               </div>
 
               {/* Key validation feedback */}
