@@ -664,6 +664,67 @@ def export_jobs_excel(user_id: str = Depends(get_current_user)):
             detail=f"Failed to generate Excel report: {str(e)}"
         )
 
+@app.post("/api/jobs/{job_id}/analyze")
+def analyze_job_match(
+    job_id: str,
+    x_gemini_key: Optional[str] = Header(None, alias="X-Gemini-Key"),
+    user_id: str = Depends(get_current_user)
+):
+    """
+    Fetches an existing job, finds the user's active resume, and conducts 
+    a deep AI match analysis using Gemini.
+    """
+    # 1. Fetch Job
+    job = database.get_job_by_id(job_id, user_id)
+    if not job:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Job with ID {job_id} not found"
+        )
+        
+    # 2. Find Active Resume
+    resumes = database.get_all_resumes(user_id)
+    active_resume = None
+    for r in resumes:
+        if r.get("is_active") == 1 or r.get("is_active") == True:
+            active_resume = r
+            break
+            
+    if not active_resume:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No active resume found. Please upload a resume and set it as active in the Resumes section."
+        )
+        
+    # 3. Path Management
+    filename = active_resume.get("filepath").split("/")[-1]
+    resume_path = os.path.join(RESUMES_DIR, filename)
+    
+    if not os.path.exists(resume_path):
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="The active resume file could not be found on the server."
+        )
+        
+    # 4. Conduct Matching
+    try:
+        match_res = extraction.match_resume_to_jd(
+            resume_path=resume_path,
+            jd_details=job,
+            custom_api_key=x_gemini_key
+        )
+        
+        if not match_res:
+            raise ValueError("AI failed to return valid analysis results.")
+            
+        return match_res
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Analysis failed: {str(e)}"
+        )
+
 # --- RESUME MANAGEMENT API ENDPOINTS ---
 
 @app.post("/api/resumes", response_model=models.ResumeDB)

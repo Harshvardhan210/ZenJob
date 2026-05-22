@@ -49,6 +49,88 @@ const getStatusColors = (status) => {
   }
 };
 
+const MatchAnalysisModal = ({ analysis, onClose }) => {
+  if (!analysis) return null;
+  const score = analysis.match_score || 0;
+  const color = score > 80 ? '#34d399' : score > 50 ? '#fbbf24' : '#f87171';
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '650px' }}>
+        <div className="modal-header">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <div className="icon-box" style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(139, 92, 246, 0.1)', color: '#a78bfa' }}>
+              <Sparkles size={20} />
+            </div>
+            <div>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: '800', background: 'linear-gradient(to right, #818cf8, #c084fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                Zen Analysis
+              </h2>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>AI-Powered Skill Match Verdict</p>
+            </div>
+          </div>
+          <button className="btn-close" onClick={onClose}><X size={20} /></button>
+        </div>
+
+        <div className="modal-body" style={{ padding: '1rem 0' }}>
+          {/* Hero Gauge */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '1rem 0 2rem' }}>
+            <div style={{ position: 'relative', width: '120px', height: '120px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg width="120" height="120" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="8" />
+                <circle cx="50" cy="50" r="45" fill="none" stroke={color} strokeWidth="8"
+                  strokeDasharray={`${2 * Math.PI * 45}`}
+                  strokeDashoffset={`${2 * Math.PI * 45 * (1 - score / 100)}`}
+                  strokeLinecap="round" transform="rotate(-90 50 50)" style={{ transition: 'stroke-dashoffset 1s ease-out' }} />
+              </svg>
+              <div style={{ position: 'absolute', textAlign: 'center' }}>
+                <span style={{ fontSize: '1.75rem', fontWeight: '800', color: color }}>{score}%</span>
+                <p style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '1px' }}>Match</p>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
+            <div>
+              <h4 style={{ fontSize: '0.85rem', color: '#34d399', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Check size={14} /> Matching Skills
+              </h4>
+              <div className="skills-tags">
+                {(analysis.matching_skills || []).map(s => <span key={s} className="badge" style={{ borderColor: 'rgba(52, 211, 153, 0.2)', color: '#34d399', background: 'rgba(52, 211, 153, 0.05)' }}>{s}</span>)}
+                {(!analysis.matching_skills || analysis.matching_skills.length === 0) && <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>None identified</span>}
+              </div>
+            </div>
+            <div>
+              <h4 style={{ fontSize: '0.85rem', color: '#fb923c', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Plus size={14} /> Skill Gaps
+              </h4>
+              <div className="skills-tags">
+                {(analysis.missing_skills || []).map(s => <span key={s} className="badge" style={{ borderColor: 'rgba(251, 146, 60, 0.2)', color: '#fb923c', background: 'rgba(251, 146, 60, 0.05)' }}>{s}</span>)}
+                {(!analysis.missing_skills || analysis.missing_skills.length === 0) && <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Perfect alignment!</span>}
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h4 style={{ fontSize: '0.85rem', color: 'var(--text-primary)', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Info size={14} /> AI Suggestions
+            </h4>
+            <div style={{ background: 'var(--bg-input)', padding: '1.25rem', borderRadius: '16px', border: '1px solid var(--border-glass)' }}>
+              <ul style={{ margin: 0, paddingLeft: '1.2rem', color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: '1.6' }}>
+                {(analysis.suggestions || []).map((s, i) => <li key={i}>{s}</li>)}
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div className="modal-footer" style={{ marginTop: '1.5rem' }}>
+          <button className="btn btn-secondary w-full" onClick={onClose}>Close Analysis</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 function App() {
   // --- STATE DECLARATIONS ---
   const [user, setUser] = useState(null);
@@ -152,6 +234,9 @@ function App() {
   const [isTestingKey, setIsTestingKey] = useState(false);
   const [testResult, setTestResult] = useState(null);
   const [tempBackendUrl, setTempBackendUrl] = useState(backendUrl);
+  const [theme, setTheme] = useState(localStorage.getItem('zenjob_theme') || 'dark');
+  const [activeAnalysis, setActiveAnalysis] = useState(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   // --- LIFECYCLE ---
 
@@ -600,20 +685,25 @@ function App() {
         body: formData
       });
 
-      if (!response.ok) {
+      if (response.ok) {
+        const data = await response.json();
+        setResumes(prev => {
+          // If the new one is active, deactivate others
+          if (data.is_active) {
+            return [...prev.map(r => ({ ...r, is_active: 0 })), data];
+          }
+          return [...prev, data];
+        });
+        setResumeUploadStatus('success');
+        showToast("Resume uploaded successfully!", "success");
+      } else {
         const errorData = await response.json();
         throw new Error(errorData.detail || "Upload failed");
       }
-
-      // Refresh list
-      fetchResumes();
-      setSelectedResumeFile(null);
-      setResumeUploadStatus('completed');
-      setTimeout(() => setResumeUploadStatus('idle'), 3000);
     } catch (error) {
-      console.error(error);
       setResumeUploadStatus('error');
-      setResumeUploadError(error.message || "An unexpected error occurred during resume upload.");
+      setResumeUploadError(error.message);
+      showToast("Upload failed: " + error.message, "error");
     }
   };
 
@@ -625,14 +715,45 @@ function App() {
         headers: authHeaders
       });
       if (response.ok) {
-        showToast('Resume set as active', 'success');
-        fetchResumes();
+        const updated = await response.json();
+        setResumes(prev => prev.map(r => ({
+          ...r,
+          is_active: r.id === updated.id ? 1 : 0
+        })));
+        showToast("Active resume updated!", "success");
       } else {
         const err = await response.json();
-        showToast('Error: ' + err.detail, 'error');
+        throw new Error(err.detail || "Failed to set active resume");
       }
     } catch (error) {
-      showToast('Network error: Could not activate resume', 'error');
+      showToast(error.message, "error");
+    }
+  };
+
+  const handleAnalyzeMatch = async (jobId) => {
+    setIsAnalyzing(true);
+    setActiveAnalysis(null);
+    try {
+      const authHeaders = await getAuthHeaders();
+      if (apiKey) {
+        authHeaders['X-Gemini-Key'] = apiKey;
+      }
+
+      const response = await fetch(`${BACKEND_URL}/api/jobs/${jobId}/analyze`, {
+        method: 'POST',
+        headers: authHeaders
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setActiveAnalysis(data);
+      } else {
+        showToast(data.detail || "Analysis failed. Ensure you have an active resume.", "error");
+      }
+    } catch (error) {
+      showToast("Connection error: " + error.message, "error");
+    } finally {
+      setIsAnalyzing(false);
     }
   };
 
@@ -646,7 +767,7 @@ function App() {
         });
         if (response.ok) {
           showToast('Resume deleted', 'success');
-          fetchResumes();
+          setResumes(prev => prev.filter(r => r.id !== resumeId));
         } else {
           const err = await response.json();
           showToast('Error: ' + err.detail, 'error');
@@ -787,7 +908,7 @@ function App() {
 
   if (!user || isRegistering) {
     if (showLanding) {
-      return <LandingPage onGetStarted={() => setShowLanding(false)} />;
+      return <LandingPage onGetStarted={() => setShowLanding(false)} theme={theme} setTheme={setTheme} />;
     }
     return <AuthScreen setIsRegistering={setIsRegistering} />;
   }
@@ -879,7 +1000,7 @@ function App() {
   }
 
   return (
-    <div className="app-wrapper">
+    <div className={`app-wrapper${theme === 'light' ? ' light-theme' : ''}`}>
       {/* GLOBAL TOAST STACK */}
       <div className="toast-stack">
         {toasts.map(t => (
@@ -1011,7 +1132,7 @@ function App() {
           <div className="glass-panel" style={{ borderLeft: '4px solid #8b5cf6', padding: '1.25rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '2.5rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
               <Info style={{ color: '#8b5cf6' }} size={20} />
-              <div style={{ fontSize: '0.9rem', color: '#d1d5db' }}>
+              <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
                 <strong>API Key Required</strong>: Paste your Gemini API key in settings to unlock automatic AI layout analysis and information parsing.
               </div>
             </div>
@@ -1466,11 +1587,23 @@ function App() {
                     </div>
 
                     <div className="span-2" style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
-                      <button type="submit" disabled={isSaving} className="btn btn-success" style={{ flexGrow: 1, height: '3rem' }}>
+                      <button type="submit" disabled={isSaving} className="btn btn-success" style={{ flexGrow: 2, height: '3rem' }}>
                         <Check size={18} />
                         <span>{isSaving ? "Saving..." : "Save to Dashboard"}</span>
                       </button>
-                      <button type="button" className="btn btn-secondary" onClick={clearImage}>
+                      {isEditing && (
+                        <button
+                          type="button"
+                          className="btn btn-primary"
+                          onClick={() => handleAnalyzeMatch(editedData.id)}
+                          disabled={isAnalyzing}
+                          style={{ flexGrow: 1, height: '3rem' }}
+                        >
+                          {isAnalyzing ? <RefreshCw className="spin" size={18} /> : <Sparkles size={18} />}
+                          <span>Match Analysis</span>
+                        </button>
+                      )}
+                      <button type="button" className="btn btn-secondary" onClick={clearImage} style={{ flexGrow: 1, height: '3rem' }}>
                         Cancel
                       </button>
                     </div>
@@ -1613,7 +1746,7 @@ function App() {
                     <tbody>
                       {filteredJobs.map(job => (
                         <tr key={job.id}>
-                          <td style={{ fontWeight: 600, color: 'white' }}>{job.company_name}</td>
+                          <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{job.company_name}</td>
                           <td>{job.job_role}</td>
                           <td>
                             {job.location ? (
@@ -1648,7 +1781,7 @@ function App() {
                           </td>
                           <td>
                             {job.email ? (
-                              <a href={`mailto:${job.email}`} style={{ color: '#a5b4fc', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                              <a href={`mailto:${job.email}`} style={{ color: 'var(--text-link, #a5b4fc)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                                 <Mail size={14} />
                                 <span>{job.email}</span>
                               </a>
@@ -1667,7 +1800,7 @@ function App() {
                                   display: 'inline-block',
                                   boxShadow: `0 0 6px ${job.match_score >= 80 ? '#34d399' : job.match_score >= 50 ? '#fbbf24' : '#f87171'}`
                                 }}></span>
-                                <span style={{ fontWeight: 600, color: 'white', fontSize: '0.85rem' }}>{job.match_score}%</span>
+                                <span style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.85rem' }}>{job.match_score}%</span>
                               </div>
                             ) : (
                               <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>—</span>
@@ -1677,7 +1810,7 @@ function App() {
                             {job.extracted_at ? (
                               <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', whiteSpace: 'nowrap' }}>
                                 <Calendar size={13} style={{ color: '#8b5cf6', flexShrink: 0 }} />
-                                <span style={{ fontSize: '0.82rem', color: '#cbd5e1' }}>
+                                <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
                                   {(() => {
                                     const d = new Date(job.extracted_at.replace(' ', 'T'));
                                     return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -1709,19 +1842,33 @@ function App() {
                               <option value="Selected" style={{ background: '#1f2937', color: 'white' }}>Selected</option>
                             </select>
                           </td>
-                          <td>
-                            <div className="action-cell">
+                          <td style={{ textAlign: 'right' }}>
+                            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
                               <button
-                                className="btn btn-secondary btn-icon-only"
-                                title="View Details"
-                                onClick={() => setShowDetailModal(job)}
+                                className="btn btn-secondary"
+                                style={{ padding: '0.4rem', borderRadius: '8px', color: '#a78bfa' }}
+                                onClick={() => handleAnalyzeMatch(job.id)}
+                                title="AI Match Analysis"
                               >
-                                <Eye size={16} />
+                                <Sparkles size={16} />
                               </button>
                               <button
-                                className="btn btn-danger btn-icon-only"
-                                title="Delete Job"
+                                className="btn btn-secondary"
+                                style={{ padding: '0.4rem', borderRadius: '8px' }}
+                                onClick={() => {
+                                  setEditedData({ ...job });
+                                  setIsEditing(true);
+                                  setActiveSection('extractor');
+                                }}
+                                title="Edit Details"
+                              >
+                                <Edit3 size={16} />
+                              </button>
+                              <button
+                                className="btn btn-secondary"
+                                style={{ padding: '0.4rem', borderRadius: '8px', color: '#f87171' }}
                                 onClick={() => handleDeleteJob(job.id)}
+                                title="Delete Posting"
                               >
                                 <Trash2 size={16} />
                               </button>
@@ -1754,7 +1901,7 @@ function App() {
               alert("Settings saved successfully!");
             }}>
               <div className="form-group" style={{ marginBottom: '2.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <label style={{ fontSize: '0.9rem', fontWeight: 600, color: '#d1d5db' }}>Google Gemini API Key</label>
+                <label style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Google Gemini API Key</label>
 
                 <div style={{ position: 'relative', display: 'flex', alignItems: 'center', width: '100%' }}>
                   <input
@@ -1792,11 +1939,11 @@ function App() {
               </div>
 
               <div className="form-group" style={{ marginBottom: '2rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', background: 'rgba(99, 102, 241, 0.05)', padding: '1.25rem', borderRadius: '12px', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
-                <label style={{ fontSize: '1rem', fontWeight: 600, color: '#a5b4fc', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <label style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-link, #a5b4fc)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <Info size={18} /> How to get a Gemini API Key
                 </label>
-                <ol style={{ margin: 0, paddingLeft: '1.5rem', color: '#cbd5e1', fontSize: '0.9rem', lineHeight: 1.6, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  <li>Go to <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" style={{ color: '#818cf8', textDecoration: 'underline' }}>Google AI Studio</a>.</li>
+                <ol style={{ margin: 0, paddingLeft: '1.5rem', color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: 1.6, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <li>Go to <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-link, #818cf8)', textDecoration: 'underline' }}>Google AI Studio</a>.</li>
                   <li>Sign in with your Google account.</li>
                   <li>Click on <strong>"Create API key"</strong>.</li>
                   <li>Copy the key and paste it into the field above, then click <strong>Save Changes</strong>.</li>
@@ -1866,7 +2013,7 @@ function App() {
           <section className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
             <div className="glass-panel" style={{ padding: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
               <div>
-                <h2 style={{ fontSize: '1.75rem', fontWeight: 700, background: 'linear-gradient(135deg, #fff 0%, #a5b4fc 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: 0 }}>
+                <h2 className="dashboard-title" style={{ fontSize: '1.75rem', margin: 0 }}>
                   My Resumes
                 </h2>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.25rem' }}>
@@ -1878,7 +2025,7 @@ function App() {
             <div className="resume-grid">
               {/* Left Panel: Upload Zone */}
               <div className="glass-panel" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', padding: '1.5rem' }}>
-                <h3 style={{ fontSize: '1.15rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0, color: 'white' }}>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0, color: 'var(--text-primary)' }}>
                   <UploadCloud size={20} style={{ color: '#8b5cf6' }} />
                   <span>Upload Resume</span>
                 </h3>
@@ -1893,9 +2040,9 @@ function App() {
                 >
                   <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', width: '100%', height: '100%', padding: '2rem' }}>
                     <FileText className="upload-icon" size={44} style={{ color: '#6b7280', marginBottom: '1rem' }} />
-                    <span style={{ fontWeight: 600, fontSize: '0.95rem', color: '#e5e7eb', textAlign: 'center' }}>Drag & drop your resume file</span>
-                    <span style={{ fontSize: '0.8rem', color: '#9ca3af', marginTop: '0.25rem', textAlign: 'center' }}>Supports PDF, DOC, or DOCX formats</span>
-                    <span style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.5rem' }}>Max size: 5MB</span>
+                    <span style={{ fontWeight: 600, fontSize: '0.95rem', color: 'var(--text-primary)', textAlign: 'center' }}>Drag & drop your resume file</span>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.25rem', textAlign: 'center' }}>Supports PDF, DOC, or DOCX formats</span>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>Max size: 5MB</span>
                     <input
                       type="file"
                       accept=".pdf,.doc,.docx"
@@ -1938,7 +2085,7 @@ function App() {
 
               {/* Right Panel: Resumes List */}
               <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                <h3 style={{ fontSize: '1.15rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0, color: 'white' }}>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0, color: 'var(--text-primary)' }}>
                   <Layers size={20} style={{ color: '#8b5cf6' }} />
                   <span>Uploaded Resumes</span>
                 </h3>
@@ -1949,9 +2096,9 @@ function App() {
                     <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Loading resumes...</div>
                   </div>
                 ) : resumes.length === 0 ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '3rem 1rem', color: '#6b7280', textAlign: 'center', border: '1px dashed var(--border-glass)', borderRadius: '12px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '3rem 1rem', color: 'var(--text-secondary)', textAlign: 'center', border: '1px dashed var(--border-glass)', borderRadius: '12px' }}>
                     <FileText size={36} style={{ color: 'rgba(156, 163, 175, 0.2)', marginBottom: '0.75rem' }} />
-                    <div style={{ fontWeight: 500, fontSize: '0.95rem', color: '#9ca3af' }}>No Resumes Uploaded Yet</div>
+                    <div style={{ fontWeight: 500, fontSize: '0.95rem', color: 'var(--text-primary)' }}>No Resumes Uploaded Yet</div>
                     <div style={{ fontSize: '0.8rem', maxWidth: '280px', marginTop: '0.25rem' }}>
                       Drag and drop a PDF or Word document on the left to add your first resume.
                     </div>
@@ -2225,7 +2372,7 @@ function App() {
                 {showDetailModal.additional_notes && (
                   <div className="detail-item" style={{ gridColumn: 'span 2' }}>
                     <span className="detail-label">Additional notes / Summary</span>
-                    <span className="detail-val" style={{ background: 'rgba(0,0,0,0.15)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border-glass)', whiteSpace: 'pre-line', fontSize: '0.9rem', color: '#d1d5db', lineHeight: 1.5 }}>
+                    <span className="detail-val" style={{ background: 'var(--bg-input)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border-glass)', whiteSpace: 'pre-line', fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
                       {showDetailModal.additional_notes}
                     </span>
                   </div>
@@ -2241,6 +2388,8 @@ function App() {
           </div>
         </div>
       )}
+
+      <MatchAnalysisModal analysis={activeAnalysis} onClose={() => setActiveAnalysis(null)} />
     </div>
   );
 }

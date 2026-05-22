@@ -1,9 +1,9 @@
 import React from 'react';
-import { Sparkles, FileText, FileSpreadsheet, Camera, CheckCircle2, ChevronRight, Briefcase } from 'lucide-react';
+import { Sparkles, FileText, FileSpreadsheet, Camera, CheckCircle2, ChevronRight, Briefcase, Sun, Moon } from 'lucide-react';
 
-function LandingPage({ onGetStarted }) {
+function LandingPage({ onGetStarted, theme, setTheme }) {
   return (
-    <div className={`app-wrapper welcome-screen ${theme === 'light' ? 'light-theme' : ''}`} style={{ flexDirection: 'column', minHeight: '100vh', backgroundImage: 'radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.12) 0%, transparent 70%)', position: 'relative', overflowX: 'hidden', background: 'var(--body-bg)' }}>
+    <div className="app-wrapper welcome-screen" style={{ flexDirection: 'column', minHeight: '100vh', backgroundImage: 'radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.12) 0%, transparent 70%)', position: 'relative', overflowX: 'hidden', background: 'var(--body-bg)' }}>
 
       {/* Navbar/Header */}
       <header style={{ padding: '1.5rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', maxWidth: '1400px', margin: '0 auto', zIndex: 10 }}>
@@ -11,7 +11,17 @@ function LandingPage({ onGetStarted }) {
           <Briefcase size={28} style={{ color: '#818cf8' }} />
           ZenJob
         </div>
-        <div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          {setTheme && (
+            <button
+              className="btn btn-secondary btn-icon-only"
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              style={{ borderRadius: '50%', padding: '0.6rem' }}
+              title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            >
+              {theme === 'dark' ? <Sun size={18} style={{ color: '#fcd34d' }} /> : <Moon size={18} style={{ color: '#8b5cf6' }} />}
+            </button>
+          )}
           <button
             className="btn btn-secondary"
             onClick={onGetStarted}

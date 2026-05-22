@@ -19,6 +19,7 @@
   --text-primary: #f3f4f6;
   --text-secondary: #9ca3af;
   --text-muted: #6b7280;
+  --text-link: #a5b4fc;
 
   --shadow-luxe: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
   --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.15);
@@ -42,6 +43,7 @@
   --text-primary: #1e293b;
   --text-secondary: #64748b;
   --text-muted: #94a3b8;
+  --text-link: #4f46e5;
 
   --shadow-luxe: 0 8px 32px 0 rgba(148, 163, 184, 0.2);
   --shadow-glow: 0 0 20px rgba(139, 92, 246, 0.08);
@@ -1077,7 +1079,7 @@ body {
 .profile-name {
   font-size: 0.95rem;
   font-weight: 600;
-  color: white;
+  color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1135,7 +1137,7 @@ body {
 .status-label {
   font-size: 0.8rem;
   font-weight: 700;
-  color: #fff;
+  color: var(--text-primary);
   letter-spacing: 0.02em;
 }
 
@@ -1420,7 +1422,7 @@ body {
 .toast-message {
   font-size: 0.9rem;
   font-weight: 500;
-  color: #f3f4f6;
+  color: var(--text-primary);
 }
 
 .toast-progress-container {
@@ -1453,4 +1455,217 @@ body {
   to {
     width: 0%;
   }
+}
+
+/* =====================================================
+   LIGHT THEME (Zen Pearl) — Full Overrides
+   Fixes all hardcoded dark colors that would be
+   invisible on a light background.
+   ===================================================== */
+
+/* Table */
+.light-theme .jobs-table th {
+  background: rgba(241, 245, 249, 0.95);
+  color: #475569;
+  border-bottom-color: rgba(0, 0, 0, 0.08);
+}
+
+.light-theme .jobs-table td {
+  color: #1e293b;
+  border-bottom-color: rgba(0, 0, 0, 0.06);
+}
+
+.light-theme .jobs-table tbody tr:hover {
+  background: rgba(99, 102, 241, 0.04);
+}
+
+.light-theme .table-responsive {
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+/* Stat Cards */
+.light-theme .stat-content p {
+  color: #1e293b;
+}
+
+.light-theme .stat-icon-wrapper {
+  background: rgba(99, 102, 241, 0.08);
+}
+
+/* Stat card / glass-panel numbers and white text */
+.light-theme .glass-panel {
+  background: rgba(255, 255, 255, 0.75);
+  border-color: rgba(0, 0, 0, 0.06);
+}
+
+/* Secondary button in light mode */
+.light-theme .btn-secondary {
+  background: rgba(0, 0, 0, 0.04);
+  color: #334155;
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+.light-theme .btn-secondary:hover {
+  background: rgba(0, 0, 0, 0.07);
+  border-color: rgba(0, 0, 0, 0.15);
+}
+
+/* Sidebar */
+.light-theme .sidebar {
+  background: rgba(255, 255, 255, 0.85);
+  border-right-color: rgba(0, 0, 0, 0.07);
+}
+
+.light-theme .nav-item {
+  color: #475569;
+}
+
+.light-theme .nav-item:hover {
+  background: rgba(99, 102, 241, 0.07);
+  color: #4f46e5;
+}
+
+.light-theme .nav-item.active {
+  background: rgba(99, 102, 241, 0.12);
+  color: #4f46e5;
+}
+
+.light-theme .nav-item .icon {
+  color: inherit;
+}
+
+.light-theme .sidebar-profile {
+  background: rgba(0, 0, 0, 0.03);
+  border-color: rgba(0, 0, 0, 0.06);
+}
+
+.light-theme .profile-name {
+  color: #1e293b;
+}
+
+.light-theme .profile-email {
+  color: #64748b;
+}
+
+/* Badge Work Mode colors in light — keep colored but fix contrast */
+.light-theme .badge-remote {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+  border-color: rgba(16, 185, 129, 0.25);
+}
+
+.light-theme .badge-hybrid {
+  background: rgba(59, 130, 246, 0.12);
+  color: #2563eb;
+  border-color: rgba(59, 130, 246, 0.25);
+}
+
+.light-theme .badge-onsite,
+.light-theme .badge-onsitehybrid {
+  background: rgba(245, 158, 11, 0.12);
+  color: #d97706;
+  border-color: rgba(245, 158, 11, 0.25);
+}
+
+/* Skill badges */
+.light-theme .badge-skill-sm {
+  background: rgba(99, 102, 241, 0.07);
+  border-color: rgba(99, 102, 241, 0.15);
+  color: #4f46e5;
+}
+
+.light-theme .skill-tag {
+  background: rgba(99, 102, 241, 0.08);
+  border-color: rgba(99, 102, 241, 0.2);
+  color: #4f46e5;
+}
+
+.light-theme .remove-tag-btn {
+  color: #6366f1;
+}
+
+/* Modal */
+.light-theme .modal-content {
+  background: #ffffff;
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12);
+}
+
+.light-theme .modal-header {
+  border-bottom-color: rgba(0, 0, 0, 0.06);
+}
+
+.light-theme .modal-footer {
+  border-top-color: rgba(0, 0, 0, 0.06);
+}
+
+.light-theme .detail-label {
+  color: #64748b;
+}
+
+.light-theme .detail-val {
+  color: #1e293b;
+}
+
+/* Job detail grid links */
+.light-theme .modal-body a {
+  color: #4f46e5;
+}
+
+/* Input & Form */
+.light-theme .input-group input:focus {
+  background: rgba(255, 255, 255, 1);
+}
+
+.light-theme .form-control {
+  background: rgba(248, 250, 252, 0.95);
+  border-color: rgba(0, 0, 0, 0.1);
+  color: #1e293b;
+}
+
+.light-theme .form-control option {
+  background: #ffffff;
+  color: #1e293b;
+}
+
+/* Loader overlay */
+.light-theme .loader-overlay {
+  background: rgba(248, 250, 252, 0.9);
+}
+
+/* Toast */
+.light-theme .toast-message {
+  color: #1e293b;
+}
+
+.light-theme .toast {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+/* Status select in table */
+.light-theme select.form-control,
+.light-theme select.filter-select {
+  background: rgba(248, 250, 252, 0.95);
+  color: #1e293b;
+}
+
+/* Dashboard header divider */
+.light-theme .dashboard-header {
+  border-bottom-color: rgba(0, 0, 0, 0.06);
+}
+
+/* Empty state */
+.light-theme .empty-title {
+  color: #334155;
+}
+
+.light-theme .empty-desc {
+  color: #64748b;
+}
+
+/* Profile Avatar */
+.light-theme .profile-avatar {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: white;
 }
