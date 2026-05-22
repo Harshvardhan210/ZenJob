@@ -2,6 +2,9 @@ import os
 import uuid
 import shutil
 import json
+import time
+import threading
+import hashlib
 from typing import Optional, List
 from datetime import datetime
 from dotenv import load_dotenv
@@ -28,6 +31,40 @@ from openpyxl.worksheet.datavalidation import DataValidation
 from openpyxl.formatting.rule import CellIsRule
 
 from . import database, extraction, models
+
+# 0. In-Process TTL Cache
+class SimpleCache:
+    """Thread-safe in-memory TTL cache."""
+    def __init__(self, ttl: int = 30):
+        self._store: dict = {}
+        self._lock = threading.Lock()
+        self.ttl = ttl
+
+    def get(self, key: str):
+        with self._lock:
+            entry = self._store.get(key)
+            if entry and (time.time() - entry["ts"]) < self.ttl:
+                return entry["val"]
+            return None
+
+    def set(self, key: str, value):
+        with self._lock:
+            self._store[key] = {"val": value, "ts": time.time()}
+
+    def delete(self, key: str):
+        with self._lock:
+            self._store.pop(key, None)
+
+    def delete_prefix(self, prefix: str):
+        with self._lock:
+            keys = [k for k in self._store if k.startswith(prefix)]
+            for k in keys:
+                del self._store[k]
+
+# jobs_cache: caches GET /api/jobs and GET /api/resumes per user (30s TTL)
+jobs_cache = SimpleCache(ttl=30)
+# extract_cache: caches AI extraction results by content hash (5min TTL)
+extract_cache = SimpleCache(ttl=300)
 
 # 1. Initialize FastAPI App
 app = FastAPI(
@@ -232,13 +269,20 @@ def extract_job_text(
 ):
     """
     Accepts raw job description text and runs Gemini AI to extract structured job details.
+    Results are cached by content hash for 5 minutes to avoid redundant AI calls.
     """
     if not request.text.strip():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Job description text cannot be empty"
         )
-        
+
+    # Cache key: hash of text + user so different users stay isolated
+    cache_key = "text:" + hashlib.sha256(f"{user_id}:{request.text}".encode()).hexdigest()
+    cached = extract_cache.get(cache_key)
+    if cached is not None:
+        return cached
+
     try:
         extracted_data = extraction.extract_job_info_from_text(
             text=request.text,
@@ -246,6 +290,7 @@ def extract_job_text(
         )
         response_dict = extracted_data.model_dump()
         response_dict = inject_resume_match(response_dict, user_id=user_id, x_gemini_key=x_gemini_key)
+        extract_cache.set(cache_key, response_dict)
         return response_dict
     except ValueError as ve:
         raise HTTPException(
@@ -266,12 +311,19 @@ def extract_job_url(
 ):
     """
     Accepts a URL, scrapes the webpage for text content, and runs Gemini AI to extract structured job details.
+    Results are cached by URL hash for 5 minutes to avoid re-scraping and re-calling AI for the same link.
     """
     if not request.url.strip():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="URL cannot be empty"
         )
+
+    # Cache key: hash of URL + user
+    cache_key = "url:" + hashlib.sha256(f"{user_id}:{request.url.strip()}".encode()).hexdigest()
+    cached = extract_cache.get(cache_key)
+    if cached is not None:
+        return cached
         
     try:
         # Fetch the webpage
@@ -309,6 +361,7 @@ def extract_job_url(
             
         response_dict = extracted_data.model_dump()
         response_dict = inject_resume_match(response_dict, user_id=user_id, x_gemini_key=x_gemini_key)
+        extract_cache.set(cache_key, response_dict)
         return response_dict
         
     except requests.exceptions.RequestException as e:
@@ -329,9 +382,15 @@ def extract_job_url(
 
 @app.get("/api/jobs", response_model=List[models.JobDB])
 def get_jobs(user_id: str = Depends(get_current_user)):
-    """Retrieves all collected job applications."""
+    """Retrieves all collected job applications. Cached per user for 30 seconds."""
+    cache_key = f"jobs:{user_id}"
+    cached = jobs_cache.get(cache_key)
+    if cached is not None:
+        return cached
     try:
-        return database.get_all_jobs(user_id)
+        result = database.get_all_jobs(user_id)
+        jobs_cache.set(cache_key, result)
+        return result
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -353,6 +412,7 @@ def create_job(job: models.JobExtraction, image_path: Optional[str] = None, user
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Saved job could not be retrieved"
             )
+        jobs_cache.delete(f"jobs:{user_id}")  # Invalidate jobs list cache
         return saved_job
     except Exception as e:
         raise HTTPException(
@@ -383,6 +443,7 @@ def update_job(job_id: str, job: models.JobExtraction, image_path: Optional[str]
                 detail="Failed to update job in database"
             )
             
+        jobs_cache.delete(f"jobs:{user_id}")  # Invalidate jobs list cache
         updated = database.get_job_by_id(job_id, user_id)
         return updated
     except HTTPException as he:
@@ -429,6 +490,7 @@ def delete_job(job_id: str, user_id: str = Depends(get_current_user)):
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to delete job from database"
             )
+        jobs_cache.delete(f"jobs:{user_id}")  # Invalidate jobs list cache
         return {"status": "success", "message": f"Job {job_id} deleted successfully"}
     except HTTPException as he:
         raise he
@@ -669,6 +731,7 @@ async def upload_resume(file: UploadFile = File(...), user_id: str = Depends(get
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Saved resume details could not be retrieved"
             )
+        jobs_cache.delete(f"resumes:{user_id}")  # Invalidate resumes list cache
         return saved_resume
     except Exception as e:
         # Clean up file if DB save failed
@@ -681,9 +744,15 @@ async def upload_resume(file: UploadFile = File(...), user_id: str = Depends(get
 
 @app.get("/api/resumes", response_model=List[models.ResumeDB])
 def get_resumes(user_id: str = Depends(get_current_user)):
-    """Retrieves all uploaded resumes."""
+    """Retrieves all uploaded resumes. Cached per user for 30 seconds."""
+    cache_key = f"resumes:{user_id}"
+    cached = jobs_cache.get(cache_key)
+    if cached is not None:
+        return cached
     try:
-        return database.get_all_resumes(user_id)
+        result = database.get_all_resumes(user_id)
+        jobs_cache.set(cache_key, result)
+        return result
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -706,6 +775,7 @@ def make_resume_active(resume_id: str, user_id: str = Depends(get_current_user))
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to update active resume in database"
             )
+        jobs_cache.delete(f"resumes:{user_id}")  # Invalidate resumes list cache
         return database.get_resume_by_id(resume_id, user_id)
     except HTTPException as he:
         raise he
@@ -754,6 +824,7 @@ def delete_resume_api(resume_id: str, user_id: str = Depends(get_current_user)):
                 detail="Failed to delete resume record from database"
             )
             
+        jobs_cache.delete(f"resumes:{user_id}")  # Invalidate resumes list cache
         # 3. If the deleted resume was active, set the next most recent one as active
         if was_active:
             remaining = database.get_all_resumes(user_id)

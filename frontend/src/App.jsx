@@ -55,15 +55,32 @@ function App() {
   const [activeSection, setActiveSection] = useState(() => {
     return localStorage.getItem('app_active_section') || 'welcome';
   });
-  const [toast, setToast] = useState(null);
+  const [toasts, setToasts] = useState([]);
+  const [confirmModal, setConfirmModal] = useState(null); // { message, onConfirm }
 
   useEffect(() => {
     localStorage.setItem('app_active_section', activeSection);
   }, [activeSection]);
 
   const showToast = (message, type = 'success') => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
+    const id = Date.now() + Math.random();
+    setToasts(prev => [...prev, { id, message, type, exiting: false }]);
+
+    // Auto-remove after 4 seconds
+    setTimeout(() => {
+      dismissToast(id);
+    }, 4000);
+  };
+
+  const dismissToast = (id) => {
+    setToasts(prev => prev.map(t => t.id === id ? { ...t, exiting: true } : t));
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, 400); // Match animation duration in CSS
+  };
+
+  const showConfirm = (message, onConfirm) => {
+    setConfirmModal({ message, onConfirm });
   };
   const [apiKey, setApiKey] = useState(() => {
     const saved = localStorage.getItem('gemini_api_key');
@@ -404,29 +421,31 @@ function App() {
       // Refresh list
       fetchJobs();
     } catch (error) {
-      alert("Error: " + error.message);
+      showToast("Error: " + error.message, 'error');
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleDeleteJob = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this job posting? This will also remove its stored image.")) return;
-    try {
-      const authHeaders = await getAuthHeaders();
-      const response = await fetch(`${BACKEND_URL}/api/jobs/${id}`, {
-        method: 'DELETE',
-        headers: authHeaders
-      });
-      if (response.ok) {
-        fetchJobs();
-      } else {
-        const err = await response.json();
-        alert("Error deleting job: " + err.detail);
+  const handleDeleteJob = (id) => {
+    showConfirm("Delete this job posting? Its stored image will also be removed.", async () => {
+      try {
+        const authHeaders = await getAuthHeaders();
+        const response = await fetch(`${BACKEND_URL}/api/jobs/${id}`, {
+          method: 'DELETE',
+          headers: authHeaders
+        });
+        if (response.ok) {
+          showToast('Job deleted successfully', 'success');
+          fetchJobs();
+        } else {
+          const err = await response.json();
+          showToast("Error deleting job: " + err.detail, 'error');
+        }
+      } catch (error) {
+        showToast('Network error: Could not complete job deletion', 'error');
       }
-    } catch (error) {
-      alert("Network error: Could not complete job deletion");
-    }
+    });
   };
 
   const handleStatusChange = async (job, newStatus) => {
@@ -465,7 +484,7 @@ function App() {
         setShowDetailModal(prev => ({ ...prev, application_status: newStatus }));
       }
     } catch (error) {
-      alert("Error updating status: " + error.message);
+      showToast('Error updating status: ' + error.message, 'error');
     }
   };
 
@@ -499,7 +518,7 @@ function App() {
       link.remove();
       window.URL.revokeObjectURL(url);
     } catch (error) {
-      alert("Excel export failed: " + error.message);
+      showToast('Excel export failed: ' + error.message, 'error');
     }
   };
 
@@ -564,33 +583,36 @@ function App() {
         headers: authHeaders
       });
       if (response.ok) {
+        showToast('Resume set as active', 'success');
         fetchResumes();
       } else {
         const err = await response.json();
-        alert("Error making resume active: " + err.detail);
+        showToast('Error: ' + err.detail, 'error');
       }
     } catch (error) {
-      alert("Network error: Could not complete resume activation");
+      showToast('Network error: Could not activate resume', 'error');
     }
   };
 
-  const handleDeleteResume = async (resumeId) => {
-    if (!window.confirm("Are you sure you want to delete this resume? This will also remove the stored file from disk.")) return;
-    try {
-      const authHeaders = await getAuthHeaders();
-      const response = await fetch(`${BACKEND_URL}/api/resumes/${resumeId}`, {
-        method: 'DELETE',
-        headers: authHeaders
-      });
-      if (response.ok) {
-        fetchResumes();
-      } else {
-        const err = await response.json();
-        alert("Error deleting resume: " + err.detail);
+  const handleDeleteResume = (resumeId) => {
+    showConfirm("Delete this resume? The file will be permanently removed from disk.", async () => {
+      try {
+        const authHeaders = await getAuthHeaders();
+        const response = await fetch(`${BACKEND_URL}/api/resumes/${resumeId}`, {
+          method: 'DELETE',
+          headers: authHeaders
+        });
+        if (response.ok) {
+          showToast('Resume deleted', 'success');
+          fetchResumes();
+        } else {
+          const err = await response.json();
+          showToast('Error: ' + err.detail, 'error');
+        }
+      } catch (error) {
+        showToast('Network error: Could not delete resume', 'error');
       }
-    } catch (error) {
-      alert("Network error: Could not complete resume deletion");
-    }
+    });
   };
 
   const handleResumeDrag = (e) => {
@@ -615,7 +637,7 @@ function App() {
         setSelectedResumeFile(file);
         handleResumeUpload(file);
       } else {
-        alert("Please upload a valid document file (PDF, DOC, or DOCX)");
+        showToast('Please upload a valid document file (PDF, DOC, or DOCX)', 'error');
       }
     }
   };
@@ -658,7 +680,7 @@ function App() {
         setImagePreview(URL.createObjectURL(file));
         setUploadStatus('idle');
       } else {
-        alert("Please upload an image file (PNG, JPG, WEBP, etc.)");
+        showToast('Please upload an image file (PNG, JPG, WEBP, etc.)', 'error');
       }
     }
   };
@@ -731,14 +753,6 @@ function App() {
   if (activeSection === 'welcome') {
     return (
       <div className="app-wrapper welcome-screen" style={{ flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: '2rem', backgroundImage: 'radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.15) 0%, transparent 50%)' }}>
-        {/* Toast */}
-        {toast && (
-          <div className={`toast fade-in ${toast.type}`} style={{ position: 'fixed', top: '20px', right: '20px', zIndex: 1000, padding: '1rem 1.5rem', borderRadius: '8px', background: toast.type === 'error' ? 'rgba(239, 68, 68, 0.15)' : toast.type === 'warning' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.15)', border: `1px solid ${toast.type === 'error' ? 'rgba(239, 68, 68, 0.3)' : toast.type === 'warning' ? 'rgba(245, 158, 11, 0.3)' : 'rgba(16, 185, 129, 0.3)'}`, color: toast.type === 'error' ? '#f87171' : toast.type === 'warning' ? '#fbbf24' : '#34d399', display: 'flex', alignItems: 'center', gap: '0.75rem', boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)', backdropFilter: 'blur(10px)' }}>
-            {toast.type === 'error' ? <AlertTriangle size={18} /> : toast.type === 'warning' ? <Info size={18} /> : <Check size={18} />}
-            <span style={{ fontSize: '0.9rem', fontWeight: '500' }}>{toast.message}</span>
-          </div>
-        )}
-
         <div className="glass-panel fade-in" style={{ maxWidth: '600px', width: '100%', textAlign: 'center', padding: '3rem 2rem', position: 'relative', overflow: 'hidden' }}>
           <div className="glow-effect" style={{ position: 'absolute', top: '-50%', left: '-50%', width: '200%', height: '200%', background: 'radial-gradient(circle, rgba(139, 92, 246, 0.1) 0%, transparent 70%)', zIndex: 0, pointerEvents: 'none' }}></div>
 
@@ -824,11 +838,59 @@ function App() {
 
   return (
     <div className="app-wrapper">
-      {/* GLOBAL TOAST */}
-      {toast && (
-        <div className={`toast fade-in ${toast.type}`} style={{ position: 'fixed', top: '20px', right: '20px', zIndex: 1000, padding: '1rem 1.5rem', borderRadius: '8px', background: toast.type === 'error' ? 'rgba(239, 68, 68, 0.15)' : toast.type === 'warning' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.15)', border: `1px solid ${toast.type === 'error' ? 'rgba(239, 68, 68, 0.3)' : toast.type === 'warning' ? 'rgba(245, 158, 11, 0.3)' : 'rgba(16, 185, 129, 0.3)'}`, color: toast.type === 'error' ? '#f87171' : toast.type === 'warning' ? '#fbbf24' : '#34d399', display: 'flex', alignItems: 'center', gap: '0.75rem', boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)', backdropFilter: 'blur(10px)' }}>
-          {toast.type === 'error' ? <AlertTriangle size={18} /> : toast.type === 'warning' ? <Info size={18} /> : <Check size={18} />}
-          <span style={{ fontSize: '0.9rem', fontWeight: '500' }}>{toast.message}</span>
+      {/* GLOBAL TOAST STACK */}
+      <div className="toast-stack">
+        {toasts.map(t => (
+          <div
+            key={t.id}
+            className={`toast toast-${t.type} ${t.exiting ? 'toast-exit' : ''}`}
+          >
+            <div className="toast-icon">
+              {t.type === 'error' ? <AlertTriangle size={20} /> :
+                t.type === 'warning' ? <Info size={20} /> :
+                  t.type === 'info' ? <Info size={20} /> :
+                    <Check size={20} />}
+            </div>
+            <div className="toast-content">
+              <div className="toast-message">{t.message}</div>
+            </div>
+            <button
+              className="toast-close"
+              onClick={(e) => {
+                e.stopPropagation();
+                dismissToast(t.id);
+              }}
+            >
+              <X size={16} />
+            </button>
+            <div className="toast-progress-container">
+              <div
+                className="toast-progress-bar"
+                style={{ animation: 'progress-drain 4s linear forwards' }}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* CUSTOM CONFIRM DIALOG */}
+      {confirmModal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)' }}>
+          <div className="glass-panel fade-in" style={{ maxWidth: '380px', width: '90%', padding: '1.75rem', borderRadius: '16px', border: '1px solid rgba(239,68,68,0.25)', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', marginBottom: '1.5rem' }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <AlertTriangle size={18} style={{ color: '#f87171' }} />
+              </div>
+              <div>
+                <div style={{ fontWeight: 600, color: 'white', fontSize: '0.95rem', marginBottom: '0.35rem' }}>Confirm Action</div>
+                <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', lineHeight: 1.5 }}>{confirmModal.message}</div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+              <button className="btn btn-secondary" style={{ padding: '0.5rem 1.1rem', fontSize: '0.875rem' }} onClick={() => setConfirmModal(null)}>Cancel</button>
+              <button className="btn" style={{ padding: '0.5rem 1.1rem', fontSize: '0.875rem', background: 'rgba(239,68,68,0.15)', color: '#f87171', border: '1px solid rgba(239,68,68,0.3)' }} onClick={() => { confirmModal.onConfirm(); setConfirmModal(null); }}>Delete</button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -1469,6 +1531,7 @@ function App() {
                         <th>Contact Email</th>
                         <th>Match</th>
                         <th>Status</th>
+                        <th>Date Applied</th>
                         <th>Actions</th>
                       </tr>
                     </thead>
@@ -1533,6 +1596,21 @@ function App() {
                               </div>
                             ) : (
                               <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>—</span>
+                            )}
+                          </td>
+                          <td>
+                            {job.extracted_at ? (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', whiteSpace: 'nowrap' }}>
+                                <Calendar size={13} style={{ color: '#8b5cf6', flexShrink: 0 }} />
+                                <span style={{ fontSize: '0.82rem', color: '#cbd5e1' }}>
+                                  {(() => {
+                                    const d = new Date(job.extracted_at.replace(' ', 'T'));
+                                    return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+                                  })()}
+                                </span>
+                              </div>
+                            ) : (
+                              <span style={{ color: 'var(--text-muted)' }}>—</span>
                             )}
                           </td>
                           <td>

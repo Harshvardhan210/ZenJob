@@ -26,7 +26,7 @@ function AuthScreen({ setIsRegistering }) {
       showToast("Please enter your name.");
       return;
     }
-    
+
     setLoading(true);
     try {
       if (isLogin) {
@@ -68,18 +68,29 @@ function AuthScreen({ setIsRegistering }) {
 
   return (
     <div className="app-wrapper welcome-screen" style={{ flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: '2rem', backgroundImage: 'radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.15) 0%, transparent 50%)' }}>
-      
-      {/* Toast */}
-      {toast && (
-        <div className={`toast fade-in ${toast.type}`} style={{ position: 'fixed', top: '20px', right: '20px', zIndex: 1000, padding: '1rem 1.5rem', borderRadius: '8px', background: toast.type === 'error' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)', border: `1px solid ${toast.type === 'error' ? 'rgba(239, 68, 68, 0.3)' : 'rgba(16, 185, 129, 0.3)'}`, color: toast.type === 'error' ? '#f87171' : '#34d399', display: 'flex', alignItems: 'center', gap: '0.75rem', boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)', backdropFilter: 'blur(10px)' }}>
-          {toast.type === 'error' ? <AlertTriangle size={18} /> : <Check size={18} />}
-          <span style={{ fontSize: '0.9rem', fontWeight: '500' }}>{toast.message}</span>
-        </div>
-      )}
+
+      <div className="toast-stack" style={{ top: '24px', right: '24px', bottom: 'auto' }}>
+        {toast && (
+          <div className={`toast toast-${toast.type}`}>
+            <div className="toast-icon">
+              {toast.type === 'error' ? <AlertTriangle size={20} /> : <Check size={20} />}
+            </div>
+            <div className="toast-content">
+              <div className="toast-message">{toast.message}</div>
+            </div>
+            <div className="toast-progress-container">
+              <div
+                className="toast-progress-bar"
+                style={{ animation: 'progress-drain 4s linear forwards' }}
+              />
+            </div>
+          </div>
+        )}
+      </div>
 
       <div className="glass-panel fade-in" style={{ maxWidth: '450px', width: '100%', textAlign: 'center', padding: '3rem 2rem', position: 'relative', overflow: 'hidden' }}>
         <div className="glow-effect" style={{ position: 'absolute', top: '-50%', left: '-50%', width: '200%', height: '200%', background: 'radial-gradient(circle, rgba(139, 92, 246, 0.1) 0%, transparent 70%)', zIndex: 0, pointerEvents: 'none' }}></div>
-        
+
         <div style={{ position: 'relative', zIndex: 1 }}>
           <h1 style={{ fontSize: '2rem', fontWeight: '800', background: 'linear-gradient(to right, #818cf8, #c084fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '0.5rem', letterSpacing: '-0.02em' }}>
             {isLogin ? 'Welcome Back' : 'Initialize Account'}
@@ -95,9 +106,9 @@ function AuthScreen({ setIsRegistering }) {
                 <label>Full Name</label>
                 <div className="input-group">
                   <div className="input-icon"><User size={18} /></div>
-                  <input 
-                    type="text" 
-                    placeholder="John Doe" 
+                  <input
+                    type="text"
+                    placeholder="John Doe"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     required
@@ -110,9 +121,9 @@ function AuthScreen({ setIsRegistering }) {
               <label>Email Access</label>
               <div className="input-group">
                 <div className="input-icon"><Mail size={18} /></div>
-                <input 
-                  type="email" 
-                  placeholder="commander@protocol.net" 
+                <input
+                  type="email"
+                  placeholder="commander@protocol.net"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
@@ -124,9 +135,9 @@ function AuthScreen({ setIsRegistering }) {
               <label>Secure Passphrase</label>
               <div className="input-group">
                 <div className="input-icon"><Lock size={18} /></div>
-                <input 
-                  type="password" 
-                  placeholder="••••••••" 
+                <input
+                  type="password"
+                  placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
@@ -135,9 +146,9 @@ function AuthScreen({ setIsRegistering }) {
               </div>
             </div>
 
-            <button 
-              type="submit" 
-              className="btn btn-primary" 
+            <button
+              type="submit"
+              className="btn btn-primary"
               style={{ width: '100%', padding: '0.85rem', fontSize: '1.05rem', justifyContent: 'center', background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)', marginTop: '0.5rem' }}
               disabled={loading}
             >
@@ -153,7 +164,7 @@ function AuthScreen({ setIsRegistering }) {
 
           <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.1)', paddingTop: '1.5rem', color: '#94a3b8', fontSize: '0.9rem' }}>
             {isLogin ? "Don't have an instance yet?" : "Already have an uplink?"}
-            <button 
+            <button
               type="button"
               onClick={() => setIsLogin(!isLogin)}
               style={{ background: 'none', border: 'none', color: '#818cf8', fontWeight: '600', cursor: 'pointer', marginLeft: '0.5rem' }}
