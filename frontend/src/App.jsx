@@ -937,52 +937,16 @@ function App() {
 
         {/* USER PROFILE SECTION */}
         {user && (
-          <div className="glass-panel" style={{
-            margin: '0.5rem 1rem 1.5rem 1rem',
-            padding: '1rem',
-            borderRadius: '16px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '0.75rem',
-            background: 'rgba(255, 255, 255, 0.03)',
-            border: '1px solid var(--border-glass)'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <div style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '12px',
-                background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: 'white',
-                fontSize: '1.1rem',
-                fontWeight: 700,
-                boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)'
-              }}>
-                {user.displayName ? user.displayName.charAt(0).toUpperCase() : (user.email ? user.email.charAt(0).toUpperCase() : <User size={20} />)}
+          <div className="sidebar-profile">
+            <div className="profile-avatar">
+              {user.displayName ? user.displayName.charAt(0).toUpperCase() : (user.email ? user.email.charAt(0).toUpperCase() : <User size={20} />)}
+            </div>
+            <div className="profile-info">
+              <div className="profile-name">
+                {user.displayName || 'Collector User'}
               </div>
-              <div style={{ overflow: 'hidden' }}>
-                <div style={{
-                  fontSize: '0.9rem',
-                  fontWeight: 600,
-                  color: 'white',
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis'
-                }}>
-                  {user.displayName || 'Collector User'}
-                </div>
-                <div style={{
-                  fontSize: '0.75rem',
-                  color: 'var(--text-secondary)',
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis'
-                }}>
-                  {user.email}
-                </div>
+              <div className="profile-email">
+                {user.email}
               </div>
             </div>
           </div>
@@ -1009,12 +973,12 @@ function App() {
           <div style={{ flex: 1 }}></div>
 
           {/* AI STATUS BADGE */}
-          <div className="glass-panel" style={{ margin: '1rem', padding: '0.75rem', borderRadius: '12px', border: apiKey ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid rgba(239, 160, 68, 0.2)', background: 'rgba(255,255,255,0.02)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-              <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: apiKey ? '#34d399' : '#fbbf24', boxShadow: apiKey ? '0 0 8px #34d399' : '0 0 8px #fbbf24' }}></div>
-              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#fff' }}>AI Engine</span>
+          <div className={`ai-status-badge ${apiKey ? 'active' : 'inactive'}`}>
+            <div className="status-dot-wrapper">
+              <div className="status-dot"></div>
+              <span className="status-label">AI Engine</span>
             </div>
-            <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
+            <div className="status-text">
               {apiKey ? 'API Key Active' : 'Key Required'}
             </div>
           </div>
