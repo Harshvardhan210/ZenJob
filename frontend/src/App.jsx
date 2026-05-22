@@ -204,6 +204,15 @@ function App() {
     }
   };
 
+  const checkApiKey = () => {
+    if (!apiKey) {
+      showToast("Gemini API Key is required for AI features. Redirecting to settings...", "warning");
+      setActiveSection('settings');
+      return false;
+    }
+    return true;
+  };
+
   const handleTestApiKey = async () => {
     if (!tempApiKey.trim()) {
       setTestResult({ success: false, message: "Please enter an API Key first." });
@@ -233,7 +242,7 @@ function App() {
   };
 
   const handleExtract = async () => {
-    if (!selectedFile) return;
+    if (!checkApiKey()) return;
 
     setUploadStatus('uploading');
     setUploadError('');
@@ -246,9 +255,7 @@ function App() {
 
       const authHeaders = await getAuthHeaders();
       const headers = { ...authHeaders };
-      if (apiKey) {
-        headers['X-Gemini-Key'] = apiKey;
-      }
+      headers['X-Gemini-Key'] = apiKey;
 
       const response = await fetch(`${BACKEND_URL}/api/extract`, {
         method: 'POST',
@@ -292,6 +299,7 @@ function App() {
 
   const handleExtractText = async () => {
     if (!textInput.trim()) return;
+    if (!checkApiKey()) return;
 
     setUploadError('');
     try {
@@ -299,9 +307,7 @@ function App() {
 
       const authHeaders = await getAuthHeaders();
       const headers = { 'Content-Type': 'application/json', ...authHeaders };
-      if (apiKey) {
-        headers['X-Gemini-Key'] = apiKey;
-      }
+      headers['X-Gemini-Key'] = apiKey;
 
       const response = await fetch(`${BACKEND_URL}/api/extract-text`, {
         method: 'POST',
@@ -345,6 +351,7 @@ function App() {
 
   const handleExtractUrl = async () => {
     if (!urlInput.trim()) return;
+    if (!checkApiKey()) return;
 
     setUploadError('');
     try {
@@ -352,9 +359,7 @@ function App() {
 
       const authHeaders = await getAuthHeaders();
       const headers = { 'Content-Type': 'application/json', ...authHeaders };
-      if (apiKey) {
-        headers['X-Gemini-Key'] = apiKey;
-      }
+      headers['X-Gemini-Key'] = apiKey;
 
       const response = await fetch(`${BACKEND_URL}/api/extract-url`, {
         method: 'POST',
@@ -921,7 +926,18 @@ function App() {
 
           <div style={{ flex: 1 }}></div>
 
-          <div className="nav-item" onClick={() => { setShowLanding(true); signOut(auth); }} style={{ marginTop: 'auto', color: '#f87171' }}>
+          {/* AI STATUS BADGE */}
+          <div className="glass-panel" style={{ margin: '1rem', padding: '0.75rem', borderRadius: '12px', border: apiKey ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid rgba(239, 160, 68, 0.2)', background: 'rgba(255,255,255,0.02)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+              <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: apiKey ? '#34d399' : '#fbbf24', boxShadow: apiKey ? '0 0 8px #34d399' : '0 0 8px #fbbf24' }}></div>
+              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#fff' }}>AI Engine</span>
+            </div>
+            <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
+              {apiKey ? 'API Key Active' : 'Key Required'}
+            </div>
+          </div>
+
+          <div className="nav-item" onClick={() => { setShowLanding(true); signOut(auth); }} style={{ color: '#f87171' }}>
             <LogOut className="icon" size={20} />
             <span>Sign Out</span>
           </div>
