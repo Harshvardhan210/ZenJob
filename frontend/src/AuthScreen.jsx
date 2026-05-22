@@ -96,7 +96,7 @@ function AuthScreen({ setIsRegistering }) {
             {isLogin ? 'Welcome Back' : 'Initialize Account'}
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '1rem', marginBottom: '2rem', lineHeight: '1.6' }}>
-            {isLogin ? 'Authenticate to access your JobCollector portal.' : 'Create a secure Firebase instance for your data.'}
+            {isLogin ? 'Authenticate to access your ZenJob portal.' : 'Create a secure Firebase instance for your data.'}
           </p>
 
           <form onSubmit={handleAuth} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', textAlign: 'left', marginBottom: '2rem' }}>

@@ -538,7 +538,7 @@ function App() {
 
       // Parse dynamic filename from headers if possible
       const disposition = response.headers.get('content-disposition');
-      let filename = `JobCollector_Report_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      let filename = `ZenJob_Report_${new Date().toISOString().slice(0, 10)}.xlsx`;
       if (disposition && disposition.indexOf('attachment') !== -1) {
         const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(disposition);
         if (matches != null && matches[1]) {
@@ -932,7 +932,7 @@ function App() {
       <aside className="sidebar">
         <div className="brand" style={{ padding: '0 0.5rem', marginBottom: '1rem' }}>
           <Briefcase className="brand-icon" size={28} />
-          <span>JobCollector</span>
+          <span>ZenJob</span>
         </div>
 
         {/* USER PROFILE SECTION */}

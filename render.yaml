@@ -1,20 +1,18 @@
 services:
-  # Backend FastAPI Service
+  # Backend FastAPI Service (ZenJob)
   - type: web
-    name: job-collector-backend
+    name: zenjob-backend
     env: python
-    region: ohio # Change to your preferred region
+    region: ohio
     plan: free
     buildCommand: cd backend && pip install -r requirements.txt
     startCommand: cd backend && gunicorn app.main:app -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT
     envVars:
-      - key: GEMINI_API_KEY
-        sync: false # Set this in Render dashboard
       - key: ALLOWED_ORIGINS
-        value: https://your-frontend-domain.vercel.app # Update after frontend deploy
+        value: "*" # Initially allow all, then update to your Vercel URL
       - key: PYTHON_VERSION
         value: 3.10.0
     disk:
-      name: uploads-data
+      name: jobs-data-disk
       mountPath: /app/backend/uploads
       sizeGB: 1

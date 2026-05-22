@@ -7,7 +7,7 @@
 [![SQLite](https://img.shields.io/badge/SQLite-07405E?style=for-the-badge&logo=sqlite&logoColor=white)](https://sqlite.org/)
 [![Vite](https://img.shields.io/badge/Vite-B73BFE?style=for-the-badge&logo=vite&logoColor=FFD627)](https://vitejs.dev/)
 
-> **MagicCounter (JobCollector)** is a premium, full-stack, AI-powered application designed to streamline and supercharge your job hunting journey. By leveraging Google's **Gemini Multimodal AI**, MagicCounter turns messy job screenshots, raw descriptions, and URLs into clean, structured data in seconds. Furthermore, it automatically evaluates your active resume against job listings to provide instant compatibility scoring, custom skill gap analyses, and dynamic improvement tips.
+> **MagicCounter (ZenJob)** is a premium, full-stack, AI-powered application designed to streamline and supercharge your job hunting journey. By leveraging Google's **Gemini Multimodal AI**, MagicCounter turns messy job screenshots, raw descriptions, and URLs into clean, structured data in seconds. Furthermore, it automatically evaluates your active resume against job listings to provide instant compatibility scoring, custom skill gap analyses, and dynamic improvement tips.
 
 ---
 

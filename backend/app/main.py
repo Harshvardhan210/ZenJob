@@ -68,7 +68,7 @@ extract_cache = SimpleCache(ttl=300)
 
 # 1. Initialize FastAPI App
 app = FastAPI(
-    title="Job Application Collector API",
+    title="ZenJob API",
     description="Backend API for extracting and collecting job application posters/screenshots",
     version="1.0.0"
 )
