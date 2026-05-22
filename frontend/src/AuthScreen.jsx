@@ -67,7 +67,7 @@ function AuthScreen({ setIsRegistering }) {
   };
 
   return (
-    <div className="app-wrapper welcome-screen" style={{ flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: '2rem', backgroundImage: 'radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.15) 0%, transparent 50%)' }}>
+    <div className={`app-wrapper welcome-screen ${localStorage.getItem('zenjob_theme') === 'light' ? 'light-theme' : ''}`} style={{ flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: '2rem', background: 'var(--body-bg)' }}>
 
       <div className="toast-stack" style={{ top: '24px', right: '24px', bottom: 'auto' }}>
         {toast && (

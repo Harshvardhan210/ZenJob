@@ -3,7 +3,7 @@ import { Sparkles, FileText, FileSpreadsheet, Camera, CheckCircle2, ChevronRight
 
 function LandingPage({ onGetStarted }) {
   return (
-    <div className="app-wrapper welcome-screen" style={{ flexDirection: 'column', minHeight: '100vh', backgroundImage: 'radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.15) 0%, transparent 70%)', position: 'relative', overflowX: 'hidden' }}>
+    <div className={`app-wrapper welcome-screen ${theme === 'light' ? 'light-theme' : ''}`} style={{ flexDirection: 'column', minHeight: '100vh', backgroundImage: 'radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.12) 0%, transparent 70%)', position: 'relative', overflowX: 'hidden', background: 'var(--body-bg)' }}>
 
       {/* Navbar/Header */}
       <header style={{ padding: '1.5rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', maxWidth: '1400px', margin: '0 auto', zIndex: 10 }}>
@@ -36,7 +36,7 @@ function LandingPage({ onGetStarted }) {
           <span style={{ background: 'linear-gradient(135deg, #818cf8 0%, #d8b4fe 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Career Trajectory</span>
         </h1>
 
-        <p className="fade-in" style={{ fontSize: 'clamp(1rem, 2vw, 1.25rem)', color: '#94a3b8', maxWidth: '700px', marginBottom: '3rem', lineHeight: '1.6', animationDelay: '0.3s' }}>
+        <p className="fade-in" style={{ fontSize: 'clamp(1rem, 2vw, 1.25rem)', color: 'var(--text-secondary)', maxWidth: '700px', marginBottom: '3rem', lineHeight: '1.6', animationDelay: '0.3s' }}>
           Extract data from any job poster instantly with Gemini AI. Match your resume against live requirements, track applications, and export stunning executive reports.
         </p>
 
@@ -77,8 +77,8 @@ function LandingPage({ onGetStarted }) {
             <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(217, 70, 239, 0.15)', color: '#e879f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <FileSpreadsheet size={24} />
             </div>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: '700', color: '#f3f4f6' }}>Engineered Reports</h3>
-            <p style={{ color: '#94a3b8', fontSize: '0.95rem', lineHeight: '1.5' }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: '700', color: 'var(--text-primary)' }}>Engineered Reports</h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', lineHeight: '1.5' }}>
               Track applications dynamically and export stunning, color-coded Excel sheets complete with drop-down validations.
             </p>
           </div>

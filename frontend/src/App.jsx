@@ -29,6 +29,8 @@ import {
   Download,
   AlertTriangle,
   RefreshCw,
+  Sun,
+  Moon,
   LogOut,
   User
 } from 'lucide-react';
@@ -152,6 +154,12 @@ function App() {
   const [tempBackendUrl, setTempBackendUrl] = useState(backendUrl);
 
   // --- LIFECYCLE ---
+
+  // Theme Sync
+  useEffect(() => {
+    document.body.className = theme === 'light' ? 'light-theme' : '';
+    localStorage.setItem('zenjob_theme', theme);
+  }, [theme]);
 
   const resetAppState = () => {
     setJobs([]);
@@ -986,6 +994,11 @@ function App() {
           <div className="nav-item logout-item" onClick={() => { setShowLanding(true); signOut(auth); }}>
             <LogOut className="icon" size={20} />
             <span>Sign Out</span>
+          </div>
+
+          <div className="nav-item theme-toggle" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
+            {theme === 'dark' ? <Sun className="icon" size={20} /> : <Moon className="icon" size={20} />}
+            <span>{theme === 'dark' ? 'Day Mode' : 'Night Mode'}</span>
           </div>
         </nav>
       </aside>
