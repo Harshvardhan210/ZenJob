@@ -67,8 +67,8 @@ function LandingPage({ onGetStarted, theme, setTheme }) {
             <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(99, 102, 241, 0.15)', color: '#818cf8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Camera size={24} />
             </div>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: '700', color: '#f3f4f6' }}>Multimodal Extraction</h3>
-            <p style={{ color: '#94a3b8', fontSize: '0.95rem', lineHeight: '1.5' }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: '700', color: 'var(--text-primary)' }}>Multimodal Extraction</h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', lineHeight: '1.5' }}>
               Upload screenshots of job posters. Our AI instantly structures the company, role, skills, and requirements into clean data.
             </p>
           </div>
@@ -77,8 +77,8 @@ function LandingPage({ onGetStarted, theme, setTheme }) {
             <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <CheckCircle2 size={24} />
             </div>
-            <h3 style={{ fontSize: '1.25rem', fontWeight: '700', color: '#f3f4f6' }}>Live Resume Matching</h3>
-            <p style={{ color: '#94a3b8', fontSize: '0.95rem', lineHeight: '1.5' }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: '700', color: 'var(--text-primary)' }}>Live Resume Matching</h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', lineHeight: '1.5' }}>
               Cross-reference your active resume against job listings in real-time. Get instant match scores and skill gap analyses.
             </p>
           </div>
