@@ -1358,6 +1358,12 @@ body {
 
 .welcome-screen {
   animation: welcomeFadeIn 0.8s ease-out forwards;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.welcome-screen::-webkit-scrollbar {
+  display: none;
 }
 
 @keyframes welcomeFadeIn {
