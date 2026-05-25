@@ -14,11 +14,12 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 load_dotenv(os.path.join(BASE_DIR, ".env"))
 
 
-from fastapi import FastAPI, UploadFile, File, Header, HTTPException, status, Depends
+from fastapi import FastAPI, UploadFile, File, Header, HTTPException, status, Depends, Response, Request
 from .auth import get_current_user
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import StreamingResponse
+from jose import JWTError, jwt
 
 import pandas as pd
 import io
@@ -128,14 +129,11 @@ def verify_path_safety(file_path: str, base_directory: str = UPLOAD_DIR) -> bool
 # Mount the uploads directory to serve images statically to the React frontend
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
-# 4. Initialize Database
-@app.on_event("startup")
-def startup_event():
-    database.init_db()
+# 4.5. Session Security Settings
+# Endpoints for Gemini API key management have been removed.
+# Local extraction logic is used instead.
 
-# 5. API Endpoints
-
-def inject_resume_match(extracted_data: dict, user_id: str, x_gemini_key: Optional[str] = None) -> dict:
+def inject_resume_match(extracted_data: dict, user_id: str) -> dict:
     """
     Checks the database for an active resume. If one exists, calls extraction.match_resume_to_jd
     and injects match metrics into the extraction output dictionary.
@@ -154,8 +152,7 @@ def inject_resume_match(extracted_data: dict, user_id: str, x_gemini_key: Option
             
             match_res = extraction.match_resume_to_jd(
                 resume_path=resume_path,
-                jd_details=extracted_data,
-                custom_api_key=x_gemini_key
+                jd_details=extracted_data
             )
             
             if match_res:
@@ -170,13 +167,13 @@ def inject_resume_match(extracted_data: dict, user_id: str, x_gemini_key: Option
 
 @app.post("/api/extract", response_model=models.JobExtraction)
 async def extract_job(
+    request: Request,
     file: UploadFile = File(...),
-    x_gemini_key: Optional[str] = Header(None, alias="X-Gemini-Key"),
     user_id: str = Depends(get_current_user)
 ):
     """
     Uploads a job poster image/screenshot, saves it locally,
-    and runs Gemini Multimodal AI to extract structured job details.
+    and runs local OCR and NLP to extract structured job details.
     """
     # Verify file is an image
     content_type = file.content_type or ""
@@ -220,8 +217,7 @@ async def extract_job(
     # Perform extraction
     try:
         extracted_data = extraction.extract_job_info_from_image(
-            image_path=saved_image_path,
-            custom_api_key=x_gemini_key
+            image_path=saved_image_path
         )
         
         # Attach the relative image path in the response headers or custom body wrapper 
@@ -236,7 +232,7 @@ async def extract_job(
         # Let's return a dictionary that matches JobExtraction but also has the "image_path"!
         response_dict = extracted_data.model_dump()
         response_dict["image_path"] = f"/uploads/{unique_filename}"
-        response_dict = inject_resume_match(response_dict, user_id=user_id, x_gemini_key=x_gemini_key)
+        response_dict = inject_resume_match(response_dict, user_id=user_id)
         return response_dict
         
     except ValueError as ve:
@@ -263,13 +259,13 @@ async def extract_job(
 
 @app.post("/api/extract-text", response_model=models.JobExtraction)
 def extract_job_text(
+    request_data: Request,
     request: models.TextExtractionRequest,
-    x_gemini_key: Optional[str] = Header(None, alias="X-Gemini-Key"),
     user_id: str = Depends(get_current_user)
 ):
     """
-    Accepts raw job description text and runs Gemini AI to extract structured job details.
-    Results are cached by content hash for 5 minutes to avoid redundant AI calls.
+    Accepts raw job description text and runs local NLP to extract structured job details.
+    Results are cached by content hash for 5 minutes.
     """
     if not request.text.strip():
         raise HTTPException(
@@ -285,11 +281,10 @@ def extract_job_text(
 
     try:
         extracted_data = extraction.extract_job_info_from_text(
-            text=request.text,
-            custom_api_key=x_gemini_key
+            text=request.text
         )
         response_dict = extracted_data.model_dump()
-        response_dict = inject_resume_match(response_dict, user_id=user_id, x_gemini_key=x_gemini_key)
+        response_dict = inject_resume_match(response_dict, user_id=user_id)
         extract_cache.set(cache_key, response_dict)
         return response_dict
     except ValueError as ve:
@@ -305,13 +300,13 @@ def extract_job_text(
 
 @app.post("/api/extract-url", response_model=models.JobExtraction)
 def extract_job_url(
+    request_data: Request,
     request: models.UrlExtractionRequest,
-    x_gemini_key: Optional[str] = Header(None, alias="X-Gemini-Key"),
     user_id: str = Depends(get_current_user)
 ):
     """
-    Accepts a URL, scrapes the webpage for text content, and runs Gemini AI to extract structured job details.
-    Results are cached by URL hash for 5 minutes to avoid re-scraping and re-calling AI for the same link.
+    Accepts a URL, scrapes the webpage for text content, and runs local NLP to extract structured job details.
+    Results are cached by URL hash for 5 minutes.
     """
     if not request.url.strip():
         raise HTTPException(
@@ -352,15 +347,14 @@ def extract_job_url(
             
         # Run AI extraction
         extracted_data = extraction.extract_job_info_from_text(
-            text=clean_text,
-            custom_api_key=x_gemini_key
+            text=clean_text
         )
         # Always populate the application_link with the source URL if it wasn't found
         if not extracted_data.application_link:
             extracted_data.application_link = request.url
             
         response_dict = extracted_data.model_dump()
-        response_dict = inject_resume_match(response_dict, user_id=user_id, x_gemini_key=x_gemini_key)
+        response_dict = inject_resume_match(response_dict, user_id=user_id)
         extract_cache.set(cache_key, response_dict)
         return response_dict
         
@@ -666,14 +660,18 @@ def export_jobs_excel(user_id: str = Depends(get_current_user)):
 
 @app.post("/api/jobs/{job_id}/analyze")
 def analyze_job_match(
+    request: Request,
     job_id: str,
-    x_gemini_key: Optional[str] = Header(None, alias="X-Gemini-Key"),
     user_id: str = Depends(get_current_user)
 ):
     """
     Fetches an existing job, finds the user's active resume, and conducts 
     a deep AI match analysis using Gemini.
     """
+    api_key = get_gemini_key()
+    if not api_key:
+        raise HTTPException(status_code=500, detail="Gemini API Key missing on server.")
+
     # 1. Fetch Job
     job = database.get_job_by_id(job_id, user_id)
     if not job:
@@ -710,8 +708,7 @@ def analyze_job_match(
     try:
         match_res = extraction.match_resume_to_jd(
             resume_path=resume_path,
-            jd_details=job,
-            custom_api_key=x_gemini_key
+            jd_details=job
         )
         
         if not match_res:
@@ -903,28 +900,35 @@ def delete_resume_api(resume_id: str, user_id: str = Depends(get_current_user)):
         )
 
 @app.post("/api/validate-key")
-def validate_gemini_key(x_gemini_key: Optional[str] = Header(None, alias="X-Gemini-Key")):
+def validate_gemini_key():
     """
-    Validates the provided Gemini API key by running a tiny test generation call.
+    Validates the server's Gemini API key by running a tiny test generation call.
     """
-    api_key = x_gemini_key or os.getenv("GEMINI_API_KEY")
+    api_key = get_gemini_key()
     if not api_key:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="API Key is missing."
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="API Key is missing on server."
         )
     try:
         import google.generativeai as genai
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel("gemini-2.5-flash")
+        
+        # Determine best available model
+        available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+        model_name = "gemini-1.5-flash"
+        if available_models:
+            model_name = available_models[0].replace('models/', '')
+            
+        model = genai.GenerativeModel(model_name)
         response = model.generate_content("Respond with exactly 'OK'")
         if response.text and "OK" in response.text:
-            return {"valid": True, "message": "API Key is valid and active!"}
+            return {"valid": True, "message": "Server API Key is valid and active!"}
         else:
-            return {"valid": True, "message": "API Key connected, but returned unexpected response."}
+            return {"valid": True, "message": "Server API Key connected, but returned unexpected response."}
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid API Key or connection error: {str(e)}"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Server API Key error or connection error: {str(e)}"
         )
 

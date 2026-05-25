@@ -167,10 +167,6 @@ function App() {
   const showConfirm = (message, onConfirm) => {
     setConfirmModal({ message, onConfirm });
   };
-  const [apiKey, setApiKey] = useState(() => {
-    const saved = localStorage.getItem('gemini_api_key');
-    return (saved && saved !== 'undefined' && saved !== 'null') ? saved : '';
-  });
   const [backendUrl, setBackendUrl] = useState(() => {
     const saved = localStorage.getItem('backend_url');
     if (saved && saved !== 'undefined' && saved !== 'null') return saved;
@@ -222,21 +218,17 @@ function App() {
   const [newSkillInput, setNewSkillInput] = useState('');
 
   // UI Controls
-  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterWorkMode, setFilterWorkMode] = useState('All');
   const [filterJobType, setFilterJobType] = useState('All');
-  const [tempApiKey, setTempApiKey] = useState(apiKey);
   const [isSaving, setIsSaving] = useState(false);
   const [showMatchDetails, setShowMatchDetails] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [isTestingKey, setIsTestingKey] = useState(false);
-  const [testResult, setTestResult] = useState(null);
-  const [tempBackendUrl, setTempBackendUrl] = useState(backendUrl);
   const [theme, setTheme] = useState(localStorage.getItem('zenjob_theme') || 'dark');
   const [activeAnalysis, setActiveAnalysis] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   // --- LIFECYCLE ---
 
@@ -254,6 +246,7 @@ function App() {
     setResumeUploadStatus('idle');
     setImagePreview(null);
     setSavedImagePath('');
+    setIsEditing(false);
     setEditedData({
       company_name: '',
       job_role: '',
@@ -271,6 +264,7 @@ function App() {
     });
   };
 
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
@@ -287,13 +281,6 @@ function App() {
     return () => unsubscribe();
   }, []);
 
-  useEffect(() => {
-    if (activeSection === 'settings') {
-      setTempApiKey(apiKey);
-      setTempBackendUrl(backendUrl);
-      setTestResult(null);
-    }
-  }, [activeSection, apiKey, backendUrl]);
 
   // --- AUTH HELPERS ---
   const getAuthHeaders = async () => {
@@ -326,74 +313,28 @@ function App() {
     }
   };
 
-  const checkApiKey = () => {
-    if (!apiKey) {
-      showToast("Gemini API Key is required for AI features. Redirecting to settings...", "warning");
-      setActiveSection('settings');
-      return false;
-    }
-    return true;
-  };
-
-  const handleTestApiKey = async () => {
-    if (!tempApiKey.trim()) {
-      setTestResult({ success: false, message: "Please enter an API Key first." });
-      return;
-    }
-    setIsTestingKey(true);
-    setTestResult(null);
-    try {
-      const response = await fetch(`${tempBackendUrl}/api/validate-key`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Gemini-Key': tempApiKey
-        }
-      });
-      const data = await response.json();
-      if (response.ok && data.valid) {
-        setTestResult({ success: true, message: data.message || "API Key is valid and active!" });
-      } else {
-        setTestResult({ success: false, message: data.detail || "Validation failed." });
-      }
-    } catch (error) {
-      setTestResult({ success: false, message: "Could not connect to validation server." });
-    } finally {
-      setIsTestingKey(false);
-    }
-  };
-
   const handleExtract = async () => {
-    if (!checkApiKey()) return;
-
     setUploadStatus('uploading');
     setUploadError('');
-
     const formData = new FormData();
     formData.append('file', selectedFile);
-
     try {
       setUploadStatus('extracting');
-
       const authHeaders = await getAuthHeaders();
-      const headers = { ...authHeaders };
-      headers['X-Gemini-Key'] = apiKey;
-
+      // No custom header, backend will use session cookie
       const response = await fetch(`${BACKEND_URL}/api/extract`, {
         method: 'POST',
-        headers: headers,
-        body: formData
+        headers: authHeaders,
+        body: formData,
+        credentials: 'include'
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.detail || "Extraction failed");
       }
-
       const result = await response.json();
       setExtractedData(result);
       setSavedImagePath(result.image_path || '');
-
       // Seed our editor state
       setEditedData({
         company_name: result.company_name || '',
@@ -410,7 +351,6 @@ function App() {
         application_status: result.application_status || 'Applied',
         match_score: result.match_score || null
       });
-
       setUploadStatus('completed');
     } catch (error) {
       console.error(error);
@@ -418,34 +358,25 @@ function App() {
       setUploadError(error.message || "An unexpected error occurred during OCR extraction.");
     }
   };
-
   const handleExtractText = async () => {
     if (!textInput.trim()) return;
-    if (!checkApiKey()) return;
-
     setUploadError('');
     try {
       setUploadStatus('extracting');
-
       const authHeaders = await getAuthHeaders();
-      const headers = { 'Content-Type': 'application/json', ...authHeaders };
-      headers['X-Gemini-Key'] = apiKey;
-
       const response = await fetch(`${BACKEND_URL}/api/extract-text`, {
         method: 'POST',
-        headers: headers,
-        body: JSON.stringify({ text: textInput })
+        headers: { 'Content-Type': 'application/json', ...authHeaders },
+        body: JSON.stringify({ text: textInput }),
+        credentials: 'include'
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.detail || "Extraction failed");
       }
-
       const result = await response.json();
       setExtractedData(result);
       setSavedImagePath('');
-
       // Seed our editor state
       setEditedData({
         company_name: result.company_name || '',
@@ -462,7 +393,6 @@ function App() {
         application_status: result.application_status || 'Applied',
         match_score: result.match_score || null
       });
-
       setUploadStatus('completed');
     } catch (error) {
       console.error(error);
@@ -470,34 +400,25 @@ function App() {
       setUploadError(error.message || "An unexpected error occurred during text extraction.");
     }
   };
-
   const handleExtractUrl = async () => {
     if (!urlInput.trim()) return;
-    if (!checkApiKey()) return;
-
     setUploadError('');
     try {
       setUploadStatus('extracting');
-
       const authHeaders = await getAuthHeaders();
-      const headers = { 'Content-Type': 'application/json', ...authHeaders };
-      headers['X-Gemini-Key'] = apiKey;
-
       const response = await fetch(`${BACKEND_URL}/api/extract-url`, {
         method: 'POST',
-        headers: headers,
-        body: JSON.stringify({ url: urlInput })
+        headers: { 'Content-Type': 'application/json', ...authHeaders },
+        body: JSON.stringify({ url: urlInput }),
+        credentials: 'include'
       });
-
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.detail || "Extraction failed");
       }
-
       const result = await response.json();
       setExtractedData(result);
       setSavedImagePath('');
-
       // Seed our editor state
       setEditedData({
         company_name: result.company_name || '',
@@ -514,7 +435,6 @@ function App() {
         application_status: result.application_status || 'Applied',
         match_score: result.match_score || null
       });
-
       setUploadStatus('completed');
     } catch (error) {
       console.error(error);
@@ -522,29 +442,35 @@ function App() {
       setUploadError(error.message || "An unexpected error occurred during URL extraction.");
     }
   };
-
   const handleSaveJob = async (e) => {
     e.preventDefault();
     setIsSaving(true);
     try {
       const authHeaders = await getAuthHeaders();
-      const url = `${BACKEND_URL}/api/jobs?image_path=${encodeURIComponent(savedImagePath)}`;
+      let url, method;
+
+      if (isEditing && editedData.id) {
+        url = `${BACKEND_URL}/api/jobs/${editedData.id}`;
+        method = 'PUT';
+      } else {
+        url = `${BACKEND_URL}/api/jobs?image_path=${encodeURIComponent(savedImagePath)}`;
+        method = 'POST';
+      }
+
       const response = await fetch(url, {
-        method: 'POST',
+        method: method,
         headers: { 'Content-Type': 'application/json', ...authHeaders },
         body: JSON.stringify(editedData)
       });
-
       if (!response.ok) {
-        throw new Error("Failed to save job application to dashboard");
+        throw new Error(`Failed to ${isEditing ? 'update' : 'save'} job application`);
       }
-
       // Reset extraction pane
       setSelectedFile(null);
       setImagePreview(null);
       setExtractedData(null);
       setUploadStatus('idle');
-
+      setIsEditing(false);
       // Refresh list
       fetchJobs();
     } catch (error) {
@@ -553,7 +479,6 @@ function App() {
       setIsSaving(false);
     }
   };
-
   const handleDeleteJob = (id) => {
     showConfirm("Delete this job posting? Its stored image will also be removed.", async () => {
       try {
@@ -574,7 +499,6 @@ function App() {
       }
     });
   };
-
   const handleStatusChange = async (job, newStatus) => {
     try {
       const authHeaders = await getAuthHeaders();
@@ -592,20 +516,16 @@ function App() {
         additional_notes: job.additional_notes,
         application_status: newStatus
       };
-
       const url = `${BACKEND_URL}/api/jobs/${job.id}`;
       const response = await fetch(url, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', ...authHeaders },
         body: JSON.stringify(updatedJobPayload)
       });
-
       if (!response.ok) {
         throw new Error("Failed to update status");
       }
-
       setJobs(prevJobs => prevJobs.map(j => j.id === job.id ? { ...j, application_status: newStatus } : j));
-
       // If modal is open for this job, update it too
       if (showDetailModal && showDetailModal.id === job.id) {
         setShowDetailModal(prev => ({ ...prev, application_status: newStatus }));
@@ -614,7 +534,6 @@ function App() {
       showToast('Error updating status: ' + error.message, 'error');
     }
   };
-
   const handleExportExcel = async () => {
     try {
       const authHeaders = await getAuthHeaders();
@@ -622,13 +541,11 @@ function App() {
       if (!response.ok) {
         throw new Error("Could not fetch the generated Excel report");
       }
-
       // Download Blob
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-
       // Parse dynamic filename from headers if possible
       const disposition = response.headers.get('content-disposition');
       let filename = `ZenJob_Report_${new Date().toISOString().slice(0, 10)}.xlsx`;
@@ -638,7 +555,6 @@ function App() {
           filename = matches[1].replace(/['"]/g, '');
         }
       }
-
       link.download = filename;
       document.body.appendChild(link);
       link.click();
@@ -648,7 +564,6 @@ function App() {
       showToast('Excel export failed: ' + error.message, 'error');
     }
   };
-
   // --- RESUME OPERATIONS ---
   const fetchResumes = async () => {
     setLoadingResumes(true);
@@ -667,16 +582,12 @@ function App() {
       setLoadingResumes(false);
     }
   };
-
   const handleResumeUpload = async (fileToUpload) => {
     if (!fileToUpload) return;
-
     setResumeUploadStatus('uploading');
     setResumeUploadError('');
-
     const formData = new FormData();
     formData.append('file', fileToUpload);
-
     try {
       const authHeaders = await getAuthHeaders();
       const response = await fetch(`${BACKEND_URL}/api/resumes`, {
@@ -684,7 +595,6 @@ function App() {
         headers: authHeaders,
         body: formData
       });
-
       if (response.ok) {
         const data = await response.json();
         setResumes(prev => {
@@ -706,7 +616,6 @@ function App() {
       showToast("Upload failed: " + error.message, "error");
     }
   };
-
   const handleMakeResumeActive = async (resumeId) => {
     try {
       const authHeaders = await getAuthHeaders();
@@ -729,21 +638,16 @@ function App() {
       showToast(error.message, "error");
     }
   };
-
   const handleAnalyzeMatch = async (jobId) => {
     setIsAnalyzing(true);
     setActiveAnalysis(null);
     try {
       const authHeaders = await getAuthHeaders();
-      if (apiKey) {
-        authHeaders['X-Gemini-Key'] = apiKey;
-      }
-
       const response = await fetch(`${BACKEND_URL}/api/jobs/${jobId}/analyze`, {
         method: 'POST',
-        headers: authHeaders
+        headers: authHeaders,
+        credentials: 'include'
       });
-
       const data = await response.json();
       if (response.ok) {
         setActiveAnalysis(data);
@@ -756,7 +660,6 @@ function App() {
       setIsAnalyzing(false);
     }
   };
-
   const handleDeleteResume = (resumeId) => {
     showConfirm("Delete this resume? The file will be permanently removed from disk.", async () => {
       try {
@@ -777,7 +680,6 @@ function App() {
       }
     });
   };
-
   const handleResumeDrag = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -787,12 +689,10 @@ function App() {
       setResumeDragActive(false);
     }
   };
-
   const handleResumeDrop = (e) => {
     e.preventDefault();
     e.stopPropagation();
     setResumeDragActive(false);
-
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const file = e.dataTransfer.files[0];
       const ext = file.name.split('.').pop().toLowerCase();
@@ -804,7 +704,6 @@ function App() {
       }
     }
   };
-
   const handleResumeFileSelect = (e) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
@@ -812,14 +711,6 @@ function App() {
       handleResumeUpload(file);
     }
   };
-
-  const saveSettings = (e) => {
-    e.preventDefault();
-    localStorage.setItem('gemini_api_key', tempApiKey);
-    setApiKey(tempApiKey);
-    setShowSettingsModal(false);
-  };
-
   // --- FILE DRAG & DROP HANDLING ---
   const handleDrag = (e) => {
     e.preventDefault();
@@ -830,12 +721,10 @@ function App() {
       setDragActive(false);
     }
   };
-
   const handleDrop = (e) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const file = e.dataTransfer.files[0];
       if (file.type.startsWith("image/")) {
@@ -847,7 +736,6 @@ function App() {
       }
     }
   };
-
   const handleFileSelect = (e) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
@@ -856,7 +744,6 @@ function App() {
       setUploadStatus('idle');
     }
   };
-
   const clearImage = () => {
     setSelectedFile(null);
     setImagePreview(null);
@@ -864,8 +751,30 @@ function App() {
     setUrlInput('');
     setExtractedData(null);
     setUploadStatus('idle');
+    setIsEditing(false);
   };
-
+  const startManualAdd = () => {
+    setExtractedData({ manual: true });
+    setEditedData({
+      company_name: '',
+      job_role: '',
+      email: '',
+      phone: '',
+      location: '',
+      job_type: 'Full-time',
+      work_mode: 'Remote',
+      skills: [],
+      experience_required: '',
+      application_link: '',
+      additional_notes: '',
+      application_status: 'Applied',
+      match_score: null
+    });
+    setSavedImagePath('');
+    setIsEditing(false);
+    setUploadStatus('idle');
+    setActiveSection('manual');
+  };
   // --- SKILL TAGS ACTIONS ---
   const addSkill = () => {
     if (newSkillInput.trim() && !editedData.skills.includes(newSkillInput.trim())) {
@@ -876,115 +785,53 @@ function App() {
       setNewSkillInput('');
     }
   };
-
   const removeSkill = (skillToRemove) => {
     setEditedData(prev => ({
       ...prev,
       skills: prev.skills.filter(s => s !== skillToRemove)
     }));
   };
-
   const handleSkillKeyDown = (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       addSkill();
     }
   };
-
   // --- SEARCH AND FILTER FILTERING ---
   const filteredJobs = jobs.filter(job => {
     const searchString = `${job.company_name} ${job.job_role} ${job.location} ${(job.skills || []).join(' ')}`.toLowerCase();
     const matchesSearch = searchString.includes(searchTerm.toLowerCase());
-
     const matchesWorkMode = filterWorkMode === 'All' || job.work_mode === filterWorkMode;
     const matchesJobType = filterJobType === 'All' || job.job_type === filterJobType;
-
     return matchesSearch && matchesWorkMode && matchesJobType;
   });
-
   if (authLoading) {
     return <div style={{ minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#0f172a', color: '#818cf8' }}><RefreshCw size={32} className="spin" /></div>;
   }
-
   if (!user || isRegistering) {
     if (showLanding) {
       return <LandingPage onGetStarted={() => setShowLanding(false)} theme={theme} setTheme={setTheme} />;
     }
     return <AuthScreen setIsRegistering={setIsRegistering} />;
   }
-
   if (activeSection === 'welcome') {
     return (
       <div className="app-wrapper welcome-screen" style={{ flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: '2rem', backgroundImage: 'radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.15) 0%, transparent 50%)' }}>
         <div className="glass-panel fade-in" style={{ maxWidth: '600px', width: '100%', textAlign: 'center', padding: '3rem 2rem', position: 'relative', overflow: 'hidden' }}>
           <div className="glow-effect" style={{ position: 'absolute', top: '-50%', left: '-50%', width: '200%', height: '200%', background: 'radial-gradient(circle, rgba(139, 92, 246, 0.1) 0%, transparent 70%)', zIndex: 0, pointerEvents: 'none' }}></div>
-
           <div style={{ position: 'relative', zIndex: 1 }}>
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
               <div className="icon-box" style={{ width: '80px', height: '80px', borderRadius: '24px', background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(139, 92, 246, 0.2) 100%)', border: '1px solid rgba(139, 92, 246, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <Briefcase size={40} style={{ color: '#a78bfa' }} />
               </div>
             </div>
-
             <h1 style={{ fontSize: '2.5rem', fontWeight: '800', background: 'linear-gradient(to right, #818cf8, #c084fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '1rem', letterSpacing: '-0.02em' }}>JobCollector</h1>
             <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem', marginBottom: '2.5rem', lineHeight: '1.6' }}>
               Your cyber-luxe portal for AI-powered job application tracking, resume matching, and automated insight extraction.
             </p>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', textAlign: 'left', marginBottom: '2.5rem', background: 'rgba(15, 23, 42, 0.4)', padding: '1.5rem', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
-              <h3 style={{ fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#94a3b8', marginBottom: '0.5rem' }}>Quick Setup</h3>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <label style={{ fontSize: '0.85rem', color: '#cbd5e1' }}>Gemini API Key (Optional)</label>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  <div className="input-group" style={{ flex: 1, margin: 0 }}>
-                    <div className="input-icon"><Settings size={16} /></div>
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      placeholder="Paste your key here..."
-                      value={tempApiKey}
-                      onChange={(e) => setTempApiKey(e.target.value)}
-                      style={{ paddingRight: '2.5rem' }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}
-                    >
-                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                  </div>
-                  <button
-                    className="btn btn-secondary"
-                    onClick={async () => {
-                      if (!tempApiKey.trim()) { showToast("Please enter an API Key first", "warning"); return; }
-                      setIsTestingKey(true);
-                      try {
-                        const res = await fetch(`${BACKEND_URL}/api/validate-key`, { method: 'POST', headers: { 'X-Gemini-Key': tempApiKey } });
-                        const data = await res.json();
-                        if (res.ok && data.valid) {
-                          setApiKey(tempApiKey);
-                          localStorage.setItem('gemini_api_key', tempApiKey);
-                          showToast("API Key validated and saved successfully!", "success");
-                        } else {
-                          showToast(data.detail || "Invalid API Key", "error");
-                        }
-                      } catch (err) {
-                        showToast("Connection failed", "error");
-                      } finally {
-                        setIsTestingKey(false);
-                      }
-                    }}
-                    disabled={isTestingKey}
-                  >
-                    {isTestingKey ? <RefreshCw size={18} className="spin" /> : <Check size={18} />}
-                    Verify
-                  </button>
-                </div>
-                {apiKey && <div style={{ fontSize: '0.8rem', color: '#34d399', display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.25rem' }}><Check size={12} /> Active Key Detected</div>}
-              </div>
-            </div>
-
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '2.5rem' }}>
+              All job data extraction and resume matching are powered by secure server-side AI.
+            </p>
             <button
               className="btn btn-primary"
               style={{ width: '100%', padding: '1rem', fontSize: '1.1rem', justifyContent: 'center', background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)', boxShadow: '0 10px 25px rgba(99, 102, 241, 0.3)' }}
@@ -998,7 +845,6 @@ function App() {
       </div>
     );
   }
-
   return (
     <div className={`app-wrapper${theme === 'light' ? ' light-theme' : ''}`}>
       {/* GLOBAL TOAST STACK */}
@@ -1035,7 +881,6 @@ function App() {
           </div>
         ))}
       </div>
-
       {/* CUSTOM CONFIRM DIALOG */}
       {confirmModal && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)' }}>
@@ -1045,7 +890,7 @@ function App() {
                 <AlertTriangle size={18} style={{ color: '#f87171' }} />
               </div>
               <div>
-                <div style={{ fontWeight: 600, color: 'white', fontSize: '0.95rem', marginBottom: '0.35rem' }}>Confirm Action</div>
+                <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.95rem', marginBottom: '0.35rem' }}>Confirm Action</div>
                 <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', lineHeight: 1.5 }}>{confirmModal.message}</div>
               </div>
             </div>
@@ -1056,14 +901,12 @@ function App() {
           </div>
         </div>
       )}
-
       {/* SIDEBAR NAVIGATION */}
       <aside className="sidebar">
         <div className="brand" style={{ padding: '0 0.5rem', marginBottom: '1rem' }}>
           <Briefcase className="brand-icon" size={28} />
           <span>ZenJob</span>
         </div>
-
         {/* USER PROFILE SECTION */}
         {user && (
           <div className="sidebar-profile">
@@ -1080,7 +923,6 @@ function App() {
             </div>
           </div>
         )}
-
         <nav className="sidebar-nav">
           <div className={`nav-item ${activeSection === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveSection('dashboard')}>
             <Layers className="icon" size={20} />
@@ -1090,58 +932,31 @@ function App() {
             <Sparkles className="icon" size={20} />
             <span>AI Extractor</span>
           </div>
+          <div className={`nav-item ${activeSection === 'manual' ? 'active' : ''}`} onClick={startManualAdd}>
+            <Plus className="icon" size={20} />
+            <span>Add Manually</span>
+          </div>
           <div className={`nav-item ${activeSection === 'resumes' ? 'active' : ''}`} onClick={() => { setActiveSection('resumes'); fetchResumes(); }}>
             <FileText className="icon" size={20} />
             <span>My Resumes</span>
           </div>
-          <div className={`nav-item ${activeSection === 'settings' ? 'active' : ''}`} onClick={() => { setTempApiKey(apiKey); setActiveSection('settings'); }}>
-            <Settings className="icon" size={20} />
-            <span>Settings</span>
+          <div className={`nav-item ${activeSection === 'about' ? 'active' : ''}`} onClick={() => setActiveSection('about')}>
+            <Info className="icon" size={20} />
+            <span>About</span>
           </div>
-
           <div style={{ flex: 1 }}></div>
-
-          {/* AI STATUS BADGE */}
-          <div className={`ai-status-badge ${apiKey ? 'active' : 'inactive'}`}>
-            <div className="status-dot-wrapper">
-              <div className="status-dot"></div>
-              <span className="status-label">AI Engine</span>
-            </div>
-            <div className="status-text">
-              {apiKey ? 'API Key Active' : 'Key Required'}
-            </div>
-          </div>
-
           <div className="nav-item logout-item" onClick={() => { setShowLanding(true); signOut(auth); }}>
             <LogOut className="icon" size={20} />
             <span>Sign Out</span>
           </div>
-
           <div className="nav-item theme-toggle" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
             {theme === 'dark' ? <Sun className="icon" size={20} /> : <Moon className="icon" size={20} />}
             <span>{theme === 'dark' ? 'Day Mode' : 'Night Mode'}</span>
           </div>
         </nav>
       </aside>
-
       {/* MAIN CONTENT AREA */}
       <main className="main-content">
-
-        {/* API KEY WARNING BANNER */}
-        {!apiKey && (
-          <div className="glass-panel" style={{ borderLeft: '4px solid #8b5cf6', padding: '1.25rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '2.5rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <Info style={{ color: '#8b5cf6' }} size={20} />
-              <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                <strong>API Key Required</strong>: Paste your Gemini API key in settings to unlock automatic AI layout analysis and information parsing.
-              </div>
-            </div>
-            <button className="btn btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }} onClick={() => { setTempApiKey(apiKey); setActiveSection('settings'); }}>
-              Set Key Now
-            </button>
-          </div>
-        )}
-
         {/* SECTION: EXTRACTOR */}
         {activeSection === 'extractor' && (
           <section className="upload-grid fade-in">
@@ -1176,7 +991,6 @@ function App() {
                   </button>
                 </div>
               </div>
-
               {inputType === 'image' ? (
                 <div
                   className={`upload-zone ${dragActive ? 'dragging' : ''}`}
@@ -1211,7 +1025,6 @@ function App() {
                       </button>
                     </label>
                   )}
-
                   {/* Extractor Loader Screen */}
                   {(uploadStatus === 'uploading' || uploadStatus === 'extracting') && (
                     <div className="loader-overlay">
@@ -1274,28 +1087,24 @@ function App() {
                   )}
                 </div>
               )}
-
               {inputType === 'image' && selectedFile && uploadStatus === 'idle' && (
                 <button className="btn btn-primary" onClick={handleExtract} style={{ width: '100%', height: '3.2rem', fontSize: '1.05rem' }}>
                   <Sparkles size={18} />
                   <span>Extract Job Information</span>
                 </button>
               )}
-
               {inputType === 'text' && textInput.trim() && uploadStatus === 'idle' && (
                 <button className="btn btn-primary" onClick={handleExtractText} style={{ width: '100%', height: '3.2rem', fontSize: '1.05rem' }}>
                   <Sparkles size={18} />
                   <span>Extract Job Information</span>
                 </button>
               )}
-
               {inputType === 'url' && urlInput.trim() && uploadStatus === 'idle' && (
                 <button className="btn btn-primary" onClick={handleExtractUrl} style={{ width: '100%', height: '3.2rem', fontSize: '1.05rem' }}>
                   <Sparkles size={18} />
                   <span>Extract Job Information</span>
                 </button>
               )}
-
               {uploadStatus === 'error' && (
                 <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '8px', padding: '1rem', color: '#fca5a5', fontSize: '0.9rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                   <strong>Extraction Error:</strong>
@@ -1306,17 +1115,14 @@ function App() {
                 </div>
               )}
             </div>
-
             {/* Right Side: Edit Form Overlay */}
             <div className="glass-panel">
               <h2 className="form-title">
                 <Edit3 size={22} style={{ color: '#8b5cf6' }} />
                 <span>Extracted Information Review</span>
               </h2>
-
               {extractedData ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%' }}>
-
                   {/* CIRCULAR PROGRESS BAR MATCH PERCENTAGE CARD */}
                   {extractedData.match_score !== undefined && extractedData.match_score !== null && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', width: '100%' }}>
@@ -1339,14 +1145,13 @@ function App() {
                           </svg>
                           {/* Percent label */}
                           <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                            <span style={{ fontSize: '1.5rem', fontWeight: 800, color: 'white' }}>{extractedData.match_score}%</span>
+                            <span style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)' }}>{extractedData.match_score}%</span>
                             <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Match</span>
                           </div>
                         </div>
-
                         {/* Quick Match stats */}
                         <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                          <h4 style={{ fontSize: '1.1rem', fontWeight: 700, margin: 0, color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <h4 style={{ fontSize: '1.1rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                             <Sparkles size={16} style={{ color: '#8b5cf6' }} />
                             <span>Resume Match Analysis</span>
                           </h4>
@@ -1367,7 +1172,6 @@ function App() {
                           </div>
                         </div>
                       </div>
-
                       {/* Collapsible Match Analysis */}
                       <div className="glass-panel" style={{ padding: '1rem', background: 'rgba(0,0,0,0.1)', border: '1px solid var(--border-glass)', borderRadius: '12px' }}>
                         <button
@@ -1381,7 +1185,6 @@ function App() {
                           </span>
                           <span style={{ fontSize: '0.75rem' }}>{showMatchDetails ? "▲" : "▼"}</span>
                         </button>
-
                         {showMatchDetails && (
                           <div style={{ marginTop: '1rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '1rem' }}>
                             {/* Matching Skills */}
@@ -1395,7 +1198,6 @@ function App() {
                                 )}
                               </div>
                             </div>
-
                             {/* Missing Skills */}
                             <div>
                               <h5 style={{ color: '#fca5a5', fontSize: '0.8rem', fontWeight: 600, margin: '0 0 0.5rem 0' }}>Gaps / Missing Skills</h5>
@@ -1407,7 +1209,6 @@ function App() {
                                 )}
                               </div>
                             </div>
-
                             {/* Suggestions */}
                             <div style={{ gridColumn: 'span 2' }}>
                               <h5 style={{ color: '#a5b4fc', fontSize: '0.8rem', fontWeight: 600, margin: '0 0 0.5rem 0' }}>Improvement Suggestions</h5>
@@ -1424,7 +1225,6 @@ function App() {
                       </div>
                     </div>
                   )}
-
                   <form onSubmit={handleSaveJob} className="form-grid">
                     <div className="form-group">
                       <label>Company Name</label>
@@ -1437,7 +1237,6 @@ function App() {
                         onChange={e => setEditedData({ ...editedData, company_name: e.target.value })}
                       />
                     </div>
-
                     <div className="form-group">
                       <label>Job Role / Title</label>
                       <input
@@ -1449,7 +1248,6 @@ function App() {
                         onChange={e => setEditedData({ ...editedData, job_role: e.target.value })}
                       />
                     </div>
-
                     <div className="form-group">
                       <label>Email Address</label>
                       <input
@@ -1460,7 +1258,6 @@ function App() {
                         onChange={e => setEditedData({ ...editedData, email: e.target.value })}
                       />
                     </div>
-
                     <div className="form-group">
                       <label>Contact Phone</label>
                       <input
@@ -1471,7 +1268,6 @@ function App() {
                         onChange={e => setEditedData({ ...editedData, phone: e.target.value })}
                       />
                     </div>
-
                     <div className="form-group">
                       <label>Location</label>
                       <input
@@ -1482,7 +1278,6 @@ function App() {
                         onChange={e => setEditedData({ ...editedData, location: e.target.value })}
                       />
                     </div>
-
                     <div className="form-group">
                       <label>Job Type</label>
                       <select
@@ -1496,7 +1291,6 @@ function App() {
                         <option value="Contract">Contract</option>
                       </select>
                     </div>
-
                     <div className="form-group">
                       <label>Work Mode</label>
                       <select
@@ -1509,7 +1303,6 @@ function App() {
                         <option value="On-site">On-site</option>
                       </select>
                     </div>
-
                     <div className="form-group">
                       <label>Application Status</label>
                       <select
@@ -1525,7 +1318,6 @@ function App() {
                         <option value="Selected">Selected</option>
                       </select>
                     </div>
-
                     <div className="form-group">
                       <label>Experience Required</label>
                       <input
@@ -1536,7 +1328,6 @@ function App() {
                         onChange={e => setEditedData({ ...editedData, experience_required: e.target.value })}
                       />
                     </div>
-
                     <div className="form-group span-2">
                       <label>Application Website / Link</label>
                       <input
@@ -1547,7 +1338,6 @@ function App() {
                         onChange={e => setEditedData({ ...editedData, application_link: e.target.value })}
                       />
                     </div>
-
                     <div className="form-group span-2">
                       <label>Skills Required (Press Enter to add)</label>
                       <div className="skills-input-container">
@@ -1574,7 +1364,6 @@ function App() {
                         ))}
                       </div>
                     </div>
-
                     <div className="form-group span-2">
                       <label>Additional Notes / Summary</label>
                       <textarea
@@ -1585,7 +1374,6 @@ function App() {
                         onChange={e => setEditedData({ ...editedData, additional_notes: e.target.value })}
                       />
                     </div>
-
                     <div className="span-2" style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
                       <button type="submit" disabled={isSaving} className="btn btn-success" style={{ flexGrow: 2, height: '3rem' }}>
                         <Check size={18} />
@@ -1622,6 +1410,178 @@ function App() {
           </section>
         )}
 
+        {/* SECTION: MANUAL ENTRY */}
+        {activeSection === 'manual' && (
+          <section className="fade-in">
+            <div className="glass-panel" style={{ maxWidth: '900px', margin: '0 auto' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-glass)', paddingBottom: '1rem' }}>
+                <Plus size={24} style={{ color: '#8b5cf6' }} />
+                <h2 style={{ margin: 0, fontSize: '1.5rem', color: 'var(--text-primary)' }}>Manual Job Entry</h2>
+              </div>
+              <form className="form-grid" onSubmit={handleSaveJob}>
+                {/* Form fields same as extractor but shown directly */}
+                <div className="form-group">
+                  <label>Company Name</label>
+                  <input
+                    type="text"
+                    required
+                    className="form-control"
+                    placeholder="e.g. Google, Waymo"
+                    value={editedData.company_name}
+                    onChange={e => setEditedData({ ...editedData, company_name: e.target.value })}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Job Role / Title</label>
+                  <input
+                    type="text"
+                    required
+                    className="form-control"
+                    placeholder="e.g. Frontend Engineer"
+                    value={editedData.job_role}
+                    onChange={e => setEditedData({ ...editedData, job_role: e.target.value })}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Contact Email</label>
+                  <input
+                    type="email"
+                    className="form-control"
+                    placeholder="hr@company.com"
+                    value={editedData.email}
+                    onChange={e => setEditedData({ ...editedData, email: e.target.value })}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Phone Number</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="+1 234 567 890"
+                    value={editedData.phone}
+                    onChange={e => setEditedData({ ...editedData, phone: e.target.value })}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Location</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="e.g. San Francisco, Remote"
+                    value={editedData.location}
+                    onChange={e => setEditedData({ ...editedData, location: e.target.value })}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Job Type</label>
+                  <select
+                    className="form-control"
+                    value={editedData.job_type}
+                    onChange={e => setEditedData({ ...editedData, job_type: e.target.value })}
+                  >
+                    <option value="Full-time">Full-time</option>
+                    <option value="Part-time">Part-time</option>
+                    <option value="Internship">Internship</option>
+                    <option value="Contract">Contract</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Work Mode</label>
+                  <select
+                    className="form-control"
+                    value={editedData.work_mode}
+                    onChange={e => setEditedData({ ...editedData, work_mode: e.target.value })}
+                  >
+                    <option value="Remote">Remote</option>
+                    <option value="Hybrid">Hybrid</option>
+                    <option value="On-site">On-site</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Application Status</label>
+                  <select
+                    className="form-control"
+                    value={editedData.application_status}
+                    onChange={e => setEditedData({ ...editedData, application_status: e.target.value })}
+                  >
+                    <option value="Applied">Applied</option>
+                    <option value="Test Process">Test Process</option>
+                    <option value="Screening">Screening</option>
+                    <option value="Pending response">Pending response</option>
+                    <option value="Rejected">Rejected</option>
+                    <option value="Selected">Selected</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Experience Required</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="e.g. 2+ years"
+                    value={editedData.experience_required}
+                    onChange={e => setEditedData({ ...editedData, experience_required: e.target.value })}
+                  />
+                </div>
+                <div className="form-group span-2">
+                  <label>Application Website / Link</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="https://jobs.company.com/apply"
+                    value={editedData.application_link}
+                    onChange={e => setEditedData({ ...editedData, application_link: e.target.value })}
+                  />
+                </div>
+                <div className="form-group span-2">
+                  <label>Skills Required (Enter to add)</label>
+                  <div className="skills-input-container">
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="e.g. React, Python"
+                      value={newSkillInput}
+                      onChange={e => setNewSkillInput(e.target.value)}
+                      onKeyDown={handleSkillKeyDown}
+                    />
+                    <button type="button" className="btn btn-secondary" onClick={addSkill}>
+                      <Plus size={18} />
+                    </button>
+                  </div>
+                  <div className="skills-tags">
+                    {editedData.skills.map(skill => (
+                      <span key={skill} className="skill-tag">
+                        <span>{skill}</span>
+                        <button type="button" className="remove-tag-btn" onClick={() => removeSkill(skill)}>
+                          <X size={12} />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div className="form-group span-2">
+                  <label>Additional Notes / Summary</label>
+                  <textarea
+                    rows="3"
+                    className="form-control"
+                    placeholder="Add any extra job requirements..."
+                    value={editedData.additional_notes}
+                    onChange={e => setEditedData({ ...editedData, additional_notes: e.target.value })}
+                  />
+                </div>
+                <div className="span-2" style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
+                  <button type="submit" disabled={isSaving} className="btn btn-primary" style={{ flexGrow: 2, height: '3.5rem' }}>
+                    <Check size={20} />
+                    <span>{isSaving ? "Saving..." : "Save to Dashboard"}</span>
+                  </button>
+                  <button type="button" className="btn btn-secondary" onClick={() => setActiveSection('dashboard')} style={{ flexGrow: 1, height: '3.5rem' }}>
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </section>
+        )}
+
         {/* SECTION: DASHBOARD */}
         {activeSection === 'dashboard' && (
           <div className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
@@ -1653,7 +1613,6 @@ function App() {
                 </div>
               </div>
             </div>
-
             {/* 3. COLLECTED APPLICATIONS DASHBOARD */}
             <section className="glass-panel">
               <div className="dashboard-header">
@@ -1663,7 +1622,6 @@ function App() {
                     List of all job applications collected from screenshots
                   </div>
                 </div>
-
                 <div className="dashboard-actions">
                   {/* Search Box */}
                   <div className="search-container">
@@ -1676,7 +1634,6 @@ function App() {
                       onChange={e => setSearchTerm(e.target.value)}
                     />
                   </div>
-
                   {/* Filters */}
                   <select
                     className="form-control filter-select"
@@ -1688,7 +1645,6 @@ function App() {
                     <option value="Hybrid">Hybrid</option>
                     <option value="On-site">On-site</option>
                   </select>
-
                   <select
                     className="form-control filter-select"
                     value={filterJobType}
@@ -1700,7 +1656,6 @@ function App() {
                     <option value="Internship">Internship</option>
                     <option value="Contract">Contract</option>
                   </select>
-
                   {jobs.length > 0 && (
                     <button className="btn btn-primary" onClick={handleExportExcel} style={{ padding: '0.75rem 1.25rem' }}>
                       <FileSpreadsheet size={18} />
@@ -1709,7 +1664,6 @@ function App() {
                   )}
                 </div>
               </div>
-
               {loadingJobs ? (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '4rem 0', gap: '1rem' }}>
                   <div className="spinner"></div>
@@ -1883,131 +1837,56 @@ function App() {
             </section>
           </div>
         )}
-
-        {/* SECTION: SETTINGS */}
-        {activeSection === 'settings' && (
-          <div className="fade-in glass-panel" style={{ maxWidth: '600px', margin: '0 auto', width: '100%', padding: '2rem' }}>
-            <h2 className="form-title" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '1.75rem', fontWeight: 700, margin: '0 0 1.5rem 0' }}>
-              <Settings size={26} style={{ color: '#8b5cf6' }} />
-              <span>API Settings</span>
-            </h2>
-
-            <form onSubmit={(e) => {
-              e.preventDefault();
-              localStorage.setItem('gemini_api_key', tempApiKey);
-              setApiKey(tempApiKey);
-              localStorage.setItem('backend_url', tempBackendUrl);
-              setBackendUrl(tempBackendUrl);
-              alert("Settings saved successfully!");
-            }}>
-              <div className="form-group" style={{ marginBottom: '2.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <label style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Google Gemini API Key</label>
-
-                <div style={{ position: 'relative', display: 'flex', alignItems: 'center', width: '100%' }}>
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    className="form-control"
-                    placeholder="Enter your AI Gemini API Key (e.g. AIzaSy...)"
-                    value={tempApiKey}
-                    onChange={e => setTempApiKey(e.target.value)}
-                    style={{ width: '100%', paddingRight: '3rem', fontSize: '0.95rem' }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    style={{
-                      position: 'absolute',
-                      right: '0.75rem',
-                      background: 'none',
-                      border: 'none',
-                      color: 'var(--text-secondary)',
-                      cursor: 'pointer',
-                      outline: 'none',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      padding: '0.25rem'
-                    }}
-                  >
-                    {showPassword ? <Eye size={18} /> : <EyeOff size={18} />}
-                  </button>
-                </div>
-
-                <div className="settings-info" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
-                  The key will be stored securely in your browser's local storage and used directly to communicate with the Google Gemini API for OCR scanning and Resume compatibility matching.
-                </div>
+        {/* SECTION: ABOUT */}
+        {activeSection === 'about' && (
+          <div className="fade-in glass-panel" style={{ maxWidth: '800px', margin: '0 auto', width: '100%', padding: '2.5rem' }}>
+            <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+              <div className="icon-box" style={{ width: '64px', height: '64px', borderRadius: '18px', background: 'rgba(139, 92, 246, 0.1)', color: '#a78bfa', margin: '0 auto 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Briefcase size={32} />
               </div>
-
-              <div className="form-group" style={{ marginBottom: '2rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', background: 'rgba(99, 102, 241, 0.05)', padding: '1.25rem', borderRadius: '12px', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
-                <label style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-link, #a5b4fc)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <Info size={18} /> How to get a Gemini API Key
-                </label>
-                <ol style={{ margin: 0, paddingLeft: '1.5rem', color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: 1.6, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  <li>Go to <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--text-link, #818cf8)', textDecoration: 'underline' }}>Google AI Studio</a>.</li>
-                  <li>Sign in with your Google account.</li>
-                  <li>Click on <strong>"Create API key"</strong>.</li>
-                  <li>Copy the key and paste it into the field above, then click <strong>Save Changes</strong>.</li>
-                </ol>
+              <h1 style={{ fontSize: '2.5rem', fontWeight: '800', background: 'linear-gradient(to right, #818cf8, #c084fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '0.5rem' }}>
+                JobCollector
+              </h1>
+              <p style={{ fontSize: '1.1rem', color: 'var(--text-secondary)' }}>Your Cyber-Luxe Career Navigator</p>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '3rem' }}>
+              <div className="glass-panel" style={{ padding: '1.5rem', background: 'rgba(255,255,255,0.02)' }}>
+                <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'white', display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+                  <Sparkles size={18} style={{ color: '#8b5cf6' }} />
+                  AI-Powered Extraction
+                </h3>
+                <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                  Leverage advanced Gemini AI to instantly extract structured job details from screenshots, raw text, or URLs. No more manual data entry.
+                </p>
               </div>
-
-              {/* Key validation feedback */}
-              {testResult && (
-                <div className="fade-in" style={{
-                  marginBottom: '2rem',
-                  padding: '1rem',
-                  borderRadius: '8px',
-                  border: `1px solid ${testResult.success ? 'rgba(52, 211, 153, 0.2)' : 'rgba(239, 68, 68, 0.2)'}`,
-                  background: testResult.success ? 'rgba(52, 211, 153, 0.05)' : 'rgba(239, 68, 68, 0.05)',
-                  color: testResult.success ? '#34d399' : '#fca5a5',
-                  fontSize: '0.85rem',
-                  display: 'flex',
-                  alignItems: 'start',
-                  gap: '0.5rem'
-                }}>
-                  {testResult.success ? <Check size={16} style={{ flexShrink: 0, marginTop: '0.1rem' }} /> : <Info size={16} style={{ flexShrink: 0, marginTop: '0.1rem' }} />}
-                  <div>
-                    <strong style={{ display: 'block', fontWeight: 700, marginBottom: '0.15rem' }}>
-                      {testResult.success ? 'Validation Successful' : 'Validation Failed'}
-                    </strong>
-                    <span>{testResult.message}</span>
-                  </div>
-                </div>
-              )}
-
-              <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-                <button
-                  type="button"
-                  disabled={isTestingKey}
-                  onClick={handleTestApiKey}
-                  className="btn btn-secondary"
-                  style={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', height: '2.8rem' }}
-                >
-                  {isTestingKey ? (
-                    <>
-                      <div className="spinner-sm" style={{ width: '16px', height: '16px', border: '2px solid rgba(255,255,255,0.2)', borderTopColor: 'white', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}></div>
-                      <span>Testing Key...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles size={16} />
-                      <span>Test Connection</span>
-                    </>
-                  )}
-                </button>
-
-                <button
-                  type="submit"
-                  className="btn btn-success"
-                  style={{ flexGrow: 1, height: '2.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
-                >
-                  <Check size={16} />
-                  <span>Save Changes</span>
-                </button>
+              <div className="glass-panel" style={{ padding: '1.5rem', background: 'rgba(255,255,255,0.02)' }}>
+                <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'white', display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+                  <Layers size={18} style={{ color: '#8b5cf6' }} />
+                  Smart Resume Matching
+                </h3>
+                <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                  Automatically compare job descriptions against your uploaded resumes to determine skill fit, calculate match scores, and get actionable improvement tips.
+                </p>
               </div>
-            </form>
+            </div>
+            <div className="glass-panel" style={{ padding: '2rem', border: '1px solid rgba(139, 92, 246, 0.2)', background: 'rgba(139, 92, 246, 0.05)' }}>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'white', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <Info size={20} style={{ color: '#8b5cf6' }} />
+                How it Works
+              </h3>
+              <ul style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', paddingLeft: '1.5rem' }}>
+                <li><strong>1. Upload</strong>: Capture a job poster or paste a job link.</li>
+                <li><strong>2. Analyze</strong>: Our server-side AI processes the data securely using stored environment keys.</li>
+                <li><strong>3. Manage</strong>: Edit details, track statuses, and export your job hunting progress to Excel.</li>
+                <li><strong>4. Match</strong>: Set an active CV and see how you stack up against requirements instantly.</li>
+              </ul>
+            </div>
+            <div style={{ marginTop: '3rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+              <p>© 2026 JobCollector • Designed for Visual Career Tracking</p>
+              <p style={{ marginTop: '0.5rem' }}>Powered by FastAPI, React & Google Gemini</p>
+            </div>
           </div>
         )}
-
         {/* SECTION: MY RESUMES */}
         {activeSection === 'resumes' && (
           <section className="fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
@@ -2021,7 +1900,6 @@ function App() {
                 </p>
               </div>
             </div>
-
             <div className="resume-grid">
               {/* Left Panel: Upload Zone */}
               <div className="glass-panel" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', padding: '1.5rem' }}>
@@ -2029,7 +1907,6 @@ function App() {
                   <UploadCloud size={20} style={{ color: '#8b5cf6' }} />
                   <span>Upload Resume</span>
                 </h3>
-
                 <div
                   className={`upload-zone ${resumeDragActive ? 'dragging' : ''}`}
                   onDragEnter={handleResumeDrag}
@@ -2056,7 +1933,6 @@ function App() {
                       Browse Files
                     </button>
                   </label>
-
                   {/* Uploading loader */}
                   {resumeUploadStatus === 'uploading' && (
                     <div className="loader-overlay" style={{ borderRadius: '12px' }}>
@@ -2067,14 +1943,12 @@ function App() {
                     </div>
                   )}
                 </div>
-
                 {resumeUploadStatus === 'completed' && (
                   <div style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.2)', borderRadius: '8px', padding: '0.75rem', color: '#a7f3d0', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <Check size={16} style={{ color: '#34d399' }} />
                     <span>Resume uploaded successfully!</span>
                   </div>
                 )}
-
                 {resumeUploadStatus === 'error' && (
                   <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '8px', padding: '0.75rem', color: '#fca5a5', fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                     <strong>Upload Error:</strong>
@@ -2082,14 +1956,12 @@ function App() {
                   </div>
                 )}
               </div>
-
               {/* Right Panel: Resumes List */}
               <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                 <h3 style={{ fontSize: '1.15rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0, color: 'var(--text-primary)' }}>
                   <Layers size={20} style={{ color: '#8b5cf6' }} />
                   <span>Uploaded Resumes</span>
                 </h3>
-
                 {loadingResumes ? (
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '3rem 0', gap: '1rem' }}>
                     <div className="spinner"></div>
@@ -2109,12 +1981,10 @@ function App() {
                       const fileSizeFormatted = resume.file_size > 1024 * 1024
                         ? `${(resume.file_size / (1024 * 1024)).toFixed(2)} MB`
                         : `${(resume.file_size / 1024).toFixed(1)} KB`;
-
                       const uploadDate = new Date(resume.uploaded_at ? resume.uploaded_at.replace(" ", "T") : new Date()).toLocaleString(undefined, {
                         dateStyle: 'medium',
                         timeStyle: 'short'
                       });
-
                       return (
                         <div
                           key={resume.id}
@@ -2144,11 +2014,10 @@ function App() {
                             }}>
                               <FileText size={20} />
                             </div>
-
                             <div style={{ overflow: 'hidden' }}>
                               <div style={{
                                 fontWeight: 600,
-                                color: 'white',
+                                color: 'var(--text-primary)',
                                 fontSize: '0.95rem',
                                 whiteSpace: 'nowrap',
                                 overflow: 'hidden',
@@ -2164,7 +2033,6 @@ function App() {
                               </div>
                             </div>
                           </div>
-
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0 }}>
                             {resume.is_active ? (
                               <span style={{
@@ -2191,7 +2059,6 @@ function App() {
                                 Make Active
                               </button>
                             )}
-
                             <a
                               href={`${BACKEND_URL}${resume.filepath}`}
                               target="_blank"
@@ -2202,7 +2069,6 @@ function App() {
                             >
                               <Eye size={15} />
                             </a>
-
                             <a
                               href={`${BACKEND_URL}${resume.filepath}`}
                               download={resume.filename}
@@ -2212,7 +2078,6 @@ function App() {
                             >
                               <Download size={15} />
                             </a>
-
                             <button
                               className="btn btn-danger btn-icon-only"
                               title="Delete Resume"
@@ -2231,7 +2096,6 @@ function App() {
           </section>
         )}
       </main>
-
       {/* 5. JOB DETAILS MODAL */}
       {showDetailModal && (
         <div className="modal-overlay">
@@ -2245,7 +2109,6 @@ function App() {
                 <X size={18} />
               </button>
             </div>
-
             <div className="modal-body job-detail-layout">
               {showDetailModal.image_path && (
                 <div className="detail-img-container">
@@ -2256,7 +2119,6 @@ function App() {
                   />
                 </div>
               )}
-
               <div className="detail-grid">
                 {showDetailModal.match_score !== undefined && showDetailModal.match_score !== null && (
                   <div className="detail-item" style={{ gridColumn: 'span 2', display: 'flex', alignItems: 'center', gap: '1rem', background: 'rgba(255, 255, 255, 0.015)', border: '1px solid var(--border-glass)', borderRadius: '12px', padding: '0.75rem 1rem' }}>
@@ -2273,7 +2135,7 @@ function App() {
                         />
                       </svg>
                       <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'white' }}>{showDetailModal.match_score}%</span>
+                        <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-primary)' }}>{showDetailModal.match_score}%</span>
                       </div>
                     </div>
                     <div>
@@ -2282,27 +2144,22 @@ function App() {
                     </div>
                   </div>
                 )}
-
                 <div className="detail-item">
                   <span className="detail-label">Company</span>
-                  <span className="detail-val" style={{ color: '#fff', fontSize: '1.1rem', fontWeight: 600 }}>{showDetailModal.company_name}</span>
+                  <span className="detail-val" style={{ color: 'var(--text-primary)', fontSize: '1.1rem', fontWeight: 600 }}>{showDetailModal.company_name}</span>
                 </div>
-
                 <div className="detail-item">
                   <span className="detail-label">Job Role</span>
-                  <span className="detail-val" style={{ color: '#fff', fontSize: '1.1rem', fontWeight: 600 }}>{showDetailModal.job_role}</span>
+                  <span className="detail-val" style={{ color: 'var(--text-primary)', fontSize: '1.1rem', fontWeight: 600 }}>{showDetailModal.job_role}</span>
                 </div>
-
                 <div className="detail-item">
                   <span className="detail-label">Location</span>
                   <span className="detail-val">{showDetailModal.location || 'Not Specified'}</span>
                 </div>
-
                 <div className="detail-item">
                   <span className="detail-label">Work Mode & Type</span>
                   <span className="detail-val">{showDetailModal.job_type} — {showDetailModal.work_mode}</span>
                 </div>
-
                 <div className="detail-item">
                   <span className="detail-label">Application Status</span>
                   <span className="detail-val" style={{
@@ -2310,12 +2167,10 @@ function App() {
                     color: getStatusColors(showDetailModal.application_status).text
                   }}>{showDetailModal.application_status || 'Applied'}</span>
                 </div>
-
                 <div className="detail-item">
                   <span className="detail-label">Experience Required</span>
                   <span className="detail-val">{showDetailModal.experience_required || 'Not Specified'}</span>
                 </div>
-
                 <div className="detail-item">
                   <span className="detail-label">Date Collected</span>
                   <span className="detail-val" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
@@ -2323,7 +2178,6 @@ function App() {
                     <span>{new Date(showDetailModal.extracted_at).toLocaleDateString(undefined, { dateStyle: 'medium' })}</span>
                   </span>
                 </div>
-
                 <div className="detail-item">
                   <span className="detail-label">Email Address</span>
                   <span className="detail-val">
@@ -2334,12 +2188,10 @@ function App() {
                     ) : 'Not Listed'}
                   </span>
                 </div>
-
                 <div className="detail-item">
                   <span className="detail-label">Phone contact</span>
                   <span className="detail-val">{showDetailModal.phone || 'Not Listed'}</span>
                 </div>
-
                 {showDetailModal.application_link && (
                   <div className="detail-item" style={{ gridColumn: 'span 2' }}>
                     <span className="detail-label">Application Website / Link</span>
@@ -2356,7 +2208,6 @@ function App() {
                     </span>
                   </div>
                 )}
-
                 <div className="detail-item" style={{ gridColumn: 'span 2' }}>
                   <span className="detail-label">Required Skills</span>
                   <div className="skills-tags" style={{ marginTop: '0.25rem' }}>
@@ -2368,7 +2219,6 @@ function App() {
                     )}
                   </div>
                 </div>
-
                 {showDetailModal.additional_notes && (
                   <div className="detail-item" style={{ gridColumn: 'span 2' }}>
                     <span className="detail-label">Additional notes / Summary</span>
@@ -2379,7 +2229,6 @@ function App() {
                 )}
               </div>
             </div>
-
             <div className="modal-footer">
               <button type="button" className="btn btn-secondary" onClick={() => setShowDetailModal(null)}>
                 Close Details
@@ -2388,10 +2237,8 @@ function App() {
           </div>
         </div>
       )}
-
       <MatchAnalysisModal analysis={activeAnalysis} onClose={() => setActiveAnalysis(null)} />
     </div>
   );
 }
-
 export default App;

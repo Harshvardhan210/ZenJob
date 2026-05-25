@@ -1,243 +1,179 @@
 import os
 import json
-from typing import Optional
+import re
+from typing import Optional, List
 from PIL import Image
-import google.generativeai as genai
+import pytesseract
+import pdfplumber
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 from .models import JobExtraction
 
-def extract_job_info_from_image(image_path: str, custom_api_key: Optional[str] = None) -> JobExtraction:
+# If tesseract is not in PATH, you can set it here:
+pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+
+def parse_job_text(text: str) -> JobExtraction:
     """
-    Sends the uploaded poster/screenshot to Gemini API to extract 
-    structured job information as a Pydantic JobExtraction model.
+    Uses regex and rule-based logic to extract job details from raw text.
     """
-    # 1. Retrieve the Gemini API Key
-    api_key = custom_api_key or os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        raise ValueError(
-            "Gemini API Key is missing. Please configure it in the application settings (gear icon) "
-            "or set the GEMINI_API_KEY environment variable on the server."
-        )
-        
-    # 2. Configure the Gemini SDK
-    genai.configure(api_key=api_key)
+    details = {
+        "company_name": None,
+        "job_role": None,
+        "email": None,
+        "phone": None,
+        "location": None,
+        "job_type": "Full-time",
+        "work_mode": "On-site",
+        "skills": [],
+        "experience_required": None,
+        "application_link": None,
+        "additional_notes": ""
+    }
+
+    # Extract email
+    email_match = re.search(r'[\w\.-]+@[\w\.-]+\.\w+', text)
+    if email_match:
+        details["email"] = email_match.group(0)
+
+    # Extract phone
+    phone_match = re.search(r'(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}', text)
+    if phone_match:
+        details["phone"] = phone_match.group(0)
+
+    # Extract URLs
+    urls = re.findall(r'https?://[^\s<>"]+|www\.[^\s<>"]+', text)
+    if urls:
+        details["application_link"] = urls[0]
+
+    # Heuristic for Job Role: Look for common titles
+    roles = ["Developer", "Engineer", "Manager", "Designer", "Analyst", "Lead", "Consultant", "Director"]
+    lines = text.split('\n')
+    for line in lines:
+        for r in roles:
+            if r.lower() in line.lower() and len(line.strip()) < 50:
+                details["job_role"] = line.strip()
+                break
+        if details["job_role"]: break
+
+    # If no role found, look for "Hiring" or "Position"
+    if not details["job_role"]:
+        pos_match = re.search(r'(Position|Role|Hiring for|Job Title):\s*([^\n]+)', text, re.IGNORECASE)
+        if pos_match:
+            details["job_role"] = pos_match.group(2).strip()
+
+    # Heuristic for Company Name: Usually near the top or near "at"
+    if lines:
+        # Check first 3 non-empty lines
+        candidate_lines = [l.strip() for l in lines if l.strip()][:3]
+        if candidate_lines:
+            details["company_name"] = candidate_lines[0]
+
+    # Work Mode / Job Type
+    if "remote" in text.lower(): details["work_mode"] = "Remote"
+    elif "hybrid" in text.lower(): details["work_mode"] = "Hybrid"
     
-    # 3. Load the image using Pillow
+    if "part-time" in text.lower() or "part time" in text.lower(): details["job_type"] = "Part-time"
+    elif "internship" in text.lower(): details["job_type"] = "Internship"
+    elif "contract" in text.lower(): details["job_type"] = "Contract"
+
+    # Skills extraction (Keyword based)
+    common_skills = [
+        "Python", "Java", "JavaScript", "React", "Node", "Angular", "Vue", "AWS", "Azure", "Docker", "Kubernetes",
+        "SQL", "NoSQL", "MongoDB", "PostgreSQL", "Flutter", "React Native", "Android", "iOS", "Swift", "Kotlin",
+        "C++", "C#", "PHP", "Laravel", "Ruby", "Rails", "Go", "Rust", "TypeScript", "HTML", "CSS", "Tailwind",
+        "Figma", "Photoshop", "Adobe", "Excel", "Marketing", "SEO", "Sales", "Communication", "Teamwork"
+    ]
+    for skill in common_skills:
+        if re.search(rf'\b{re.escape(skill)}\b', text, re.IGNORECASE):
+            details["skills"].append(skill)
+
+    # Experience
+    exp_match = re.search(r'(\d+[\+\-]?\s*(years?|yrs?))', text, re.IGNORECASE)
+    if exp_match:
+        details["experience_required"] = exp_match.group(0)
+
+    # Location
+    # This is hard without a database, but let's look for "Location:"
+    loc_match = re.search(r'Location:\s*([^\n]+)', text, re.IGNORECASE)
+    if loc_match:
+        details["location"] = loc_match.group(1).strip()
+
+    details["additional_notes"] = "Extracted locally using Python (Pytesseract/Regex)."
+    
+    return JobExtraction(**details)
+
+def extract_job_info_from_image(image_path: str) -> JobExtraction:
+    """
+    Extracts text from image using Pytesseract and parses it locally.
+    """
     if not os.path.exists(image_path):
         raise FileNotFoundError(f"Image not found at path: {image_path}")
         
     try:
         image = Image.open(image_path)
+        # Perform OCR
+        raw_text = pytesseract.image_to_string(image)
+        return parse_job_text(raw_text)
     except Exception as e:
-        raise ValueError(f"Failed to open image file using PIL: {str(e)}")
-        
-    # 4. Initialize Gemini Model (gemini-2.5-flash is extremely fast, free/low-cost, and supports multimodal inputs)
-    model = genai.GenerativeModel("gemini-2.5-flash")
-    
-    # 5. Build prompt
-    prompt = (
-        "You are an expert AI parser specializing in extracting structured job details from job advertisement flyers, "
-        "posters, and screenshots. Analyze the attached image and extract all relevant job details.\n"
-        "Be thorough and precise. If some information is not present or cannot be inferred from the image, leave it as null/empty.\n\n"
-        "FIELDS TO EXTRACT:\n"
-        "- company_name: Name of the company offering the job (e.g. Google, TechCorp, Acme Inc).\n"
-        "- job_role: Job title or role (e.g. Software Engineer, React Developer, Marketing Lead).\n"
-        "- email: Contact email address for job application if visible in poster.\n"
-        "- phone: Contact phone number if visible in poster.\n"
-        "- location: Job location (e.g. Remote, San Francisco, New Delhi, etc.).\n"
-        "- job_type: Job type (e.g. Full-time, Part-time, Internship, Contract).\n"
-        "- work_mode: Work mode (e.g. Remote, Hybrid, On-site).\n"
-        "- skills: List of key skills required for the job as listed in the poster (e.g. ['React', 'Node.js', 'Python']).\n"
-        "- experience_required: Experience requirements (e.g. 2+ years, Freshers).\n"
-        "- application_link: Any website URL, application link, or landing page link shown.\n"
-        "- additional_notes: Any other key information, requirements, or perks extracted from the poster."
-    )
-    
-    # 6. Call the Gemini API with a robust schema-constrained config
-    try:
-        # Standard configuration utilizing native structured JSON output
-        response = model.generate_content(
-            [image, prompt],
-            generation_config={
-                "response_mime_type": "application/json",
-                "response_schema": JobExtraction,
-            }
-        )
-        return JobExtraction.model_validate_json(response.text)
-    except Exception as e:
-        # Fallback mechanism for potential SDK version incompatibilities
-        # Just request application/json output format and prompt-based structure constraint
-        fallback_prompt = (
-            f"{prompt}\n\nYou MUST return a JSON object matching this structure:\n"
-            "{\n"
-            '  "company_name": "string or null",\n'
-            '  "job_role": "string or null",\n'
-            '  "email": "string or null",\n'
-            '  "phone": "string or null",\n'
-            '  "location": "string or null",\n'
-            '  "job_type": "string or null",\n'
-            '  "work_mode": "string or null",\n'
-            '  "skills": ["string"],\n'
-            '  "experience_required": "string or null",\n'
-            '  "application_link": "string or null",\n'
-            '  "additional_notes": "string or null"\n'
-            "}"
-        )
-        
-        response = model.generate_content(
-            [image, fallback_prompt],
-            generation_config={
-                "response_mime_type": "application/json",
-            }
-        )
-        return JobExtraction.model_validate_json(response.text)
+        if "tesseract is not installed" in str(e).lower() or "tesseract_cmd" in str(e).lower():
+            raise ValueError("Tesseract OCR engine not found. Please install it on your system.")
+        raise ValueError(f"Local OCR failed: {str(e)}")
 
-def extract_job_info_from_text(text: str, custom_api_key: Optional[str] = None) -> JobExtraction:
-    """
-    Sends raw job description text to the Gemini API to extract 
-    structured job information as a Pydantic JobExtraction model.
-    """
-    # 1. Retrieve the Gemini API Key
-    api_key = custom_api_key or os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        raise ValueError(
-            "Gemini API Key is missing. Please configure it in the application settings (gear icon) "
-            "or set the GEMINI_API_KEY environment variable on the server."
-        )
-        
-    # 2. Configure the Gemini SDK
-    genai.configure(api_key=api_key)
-    
-    # 3. Initialize Gemini Model (gemini-2.5-flash is extremely fast, free/low-cost)
-    model = genai.GenerativeModel("gemini-2.5-flash")
-    
-    # 4. Build prompt
-    prompt = (
-        "You are an expert AI parser specializing in extracting structured job details from raw job description texts.\n"
-        "Analyze the following job description text and extract all relevant job details.\n"
-        "Be thorough and precise. If some information is not present or cannot be inferred from the text, leave it as null/empty.\n\n"
-        "FIELDS TO EXTRACT:\n"
-        "- company_name: Name of the company offering the job (e.g. Google, TechCorp, Acme Inc).\n"
-        "- job_role: Job title or role (e.g. Software Engineer, React Developer, Marketing Lead).\n"
-        "- email: Contact email address for job application if visible in the text.\n"
-        "- phone: Contact phone number if visible in the text.\n"
-        "- location: Job location (e.g. Remote, San Francisco, New Delhi, etc.).\n"
-        "- job_type: Job type (e.g. Full-time, Part-time, Internship, Contract).\n"
-        "- work_mode: Work mode (e.g. Remote, Hybrid, On-site).\n"
-        "- skills: List of key skills required for the job as listed in the text (e.g. ['React', 'Node.js', 'Python']).\n"
-        "- experience_required: Experience requirements (e.g. 2+ years, Freshers).\n"
-        "- application_link: Any website URL, application link, or landing page link shown in the text.\n"
-        "- additional_notes: Any other key information, requirements, or perks extracted from the text.\n\n"
-        f"JOB DESCRIPTION TEXT TO ANALYZE:\n"
-        f"\"\"\"\n{text}\n\"\"\""
-    )
-    
-    # 5. Call the Gemini API with a robust schema-constrained config
-    try:
-        response = model.generate_content(
-            prompt,
-            generation_config={
-                "response_mime_type": "application/json",
-                "response_schema": JobExtraction,
-            }
-        )
-        return JobExtraction.model_validate_json(response.text)
-    except Exception as e:
-        # Fallback mechanism for potential SDK version incompatibilities
-        fallback_prompt = (
-            f"{prompt}\n\nYou MUST return a JSON object matching this structure:\n"
-            "{\n"
-            '  "company_name": "string or null",\n'
-            '  "job_role": "string or null",\n'
-            '  "email": "string or null",\n'
-            '  "phone": "string or null",\n'
-            '  "location": "string or null",\n'
-            '  "job_type": "string or null",\n'
-            '  "work_mode": "string or null",\n'
-            '  "skills": ["string"],\n'
-            '  "experience_required": "string or null",\n'
-            '  "application_link": "string or null",\n'
-            '  "additional_notes": "string or null"\n'
-            "}"
-        )
-        
-        response = model.generate_content(
-            fallback_prompt,
-            generation_config={
-                "response_mime_type": "application/json",
-            }
-        )
-        return JobExtraction.model_validate_json(response.text)
+def extract_job_info_from_text(text: str) -> JobExtraction:
+    return parse_job_text(text)
 
-def match_resume_to_jd(resume_path: str, jd_details: dict, custom_api_key: Optional[str] = None) -> dict:
+def match_resume_to_jd(resume_path: str, jd_details: dict) -> dict:
     """
-    Uploads the active resume file to the Gemini API, matches its content
-    against the extracted job details, and returns structured match results.
+    Matches a local resume (PDF) against job details using TF-IDF similarity.
     """
-    # 1. Retrieve the Gemini API Key
-    api_key = custom_api_key or os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        print("Missing Gemini API Key for resume matching.")
-        return {}
-        
-    # 2. Configure the Gemini SDK
-    genai.configure(api_key=api_key)
-    
-    # 3. Verify file exists
-    if not os.path.exists(resume_path):
-        print(f"Active resume file not found at: {resume_path}")
-        return {}
-        
-    # 4. Upload file to Gemini API
+    # 1. Extract text from resume
+    resume_text = ""
     try:
-        uploaded_file = genai.upload_file(resume_path)
+        with pdfplumber.open(resume_path) as pdf:
+            for page in pdf.pages:
+                resume_text += (page.extract_text() or "") + "\n"
     except Exception as e:
-        print(f"Failed to upload resume to Gemini: {str(e)}")
+        print(f"Failed to parse resume PDF: {str(e)}")
         return {}
-        
-    # 5. Build prompt
-    prompt = (
-        "You are an expert technical recruiter and resume matching specialist.\n"
-        "Analyze the attached resume against this Job Description (JD) and calculate the fit:\n\n"
-        "JOB DETAILS TO MATCH AGAINST:\n"
-        f"Company Name: {jd_details.get('company_name') or 'N/A'}\n"
-        f"Job Role: {jd_details.get('job_role') or 'N/A'}\n"
-        f"Required Skills: {jd_details.get('skills') or []}\n"
-        f"Location: {jd_details.get('location') or 'N/A'}\n"
-        f"Job Type: {jd_details.get('job_type') or 'N/A'}\n"
-        f"Work Mode: {jd_details.get('work_mode') or 'N/A'}\n"
-        f"Experience Required: {jd_details.get('experience_required') or 'N/A'}\n"
-        f"Additional Notes: {jd_details.get('additional_notes') or 'N/A'}\n\n"
-        "Review the candidate's resume and return a JSON matching this structure exactly:\n"
-        "{\n"
-        '  "match_score": 85,\n'
-        '  "matching_skills": ["HTML", "JavaScript"],\n'
-        '  "missing_skills": ["Zoho CRM", "Salesforce"],\n'
-        '  "suggestions": ["Add Zoho CRM certification", "Highlight workflow automation projects"]\n'
-        "}\n\n"
-        "Ensure match_score is an integer between 0 and 100 representing how well the candidate fits the requirements.\n"
-        "matching_skills should list skills from the JD that are present or well-implied in the resume.\n"
-        "missing_skills should list skills from the JD that are absent or weak in the resume.\n"
-        "suggestions should list actionable, specific feedback for the candidate to improve their match score."
-    )
+
+    if not resume_text.strip():
+        return {}
+
+    # 2. Combine JD fields for matching
+    jd_text = f"{jd_details.get('job_role', '')} {jd_details.get('company_name', '')} {' '.join(jd_details.get('skills', []))} {jd_details.get('additional_notes', '')}"
     
-    # 6. Call generative model
-    model = genai.GenerativeModel("gemini-2.5-flash")
+    # 3. Simple TF-IDF Cosine Similarity
     try:
-        response = model.generate_content(
-            [uploaded_file, prompt],
-            generation_config={
-                "response_mime_type": "application/json"
-            }
-        )
-        return json.loads(response.text)
-    except Exception as e:
-        print(f"Failed to match resume using Gemini: {str(e)}")
-        return {}
-    finally:
-        # 7. Clean up file on Gemini server
-        try:
-            uploaded_file.delete()
-        except Exception:
-            pass
+        vectorizer = TfidfVectorizer()
+        tfidf_matrix = vectorizer.fit_transform([resume_text, jd_text])
+        similarity = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])[0][0]
+        match_score = int(similarity * 100)
+    except Exception:
+        match_score = 0
 
+    # 4. Keyword matches
+    resume_text_lower = resume_text.lower()
+    matching_skills = []
+    missing_skills = []
+    
+    for skill in jd_details.get('skills', []):
+        if skill.lower() in resume_text_lower:
+            matching_skills.append(skill)
+        else:
+            missing_skills.append(skill)
 
+    # 5. Heuristic suggestions
+    suggestions = []
+    if not matching_skills:
+        suggestions.append("Ensure your resume contains the exact keywords mentioned in the job description.")
+    if missing_skills:
+        suggestions.append(f"Try to incorporate skills like {', '.join(missing_skills[:3])} into your resume experiences.")
+    if len(resume_text) < 500:
+        suggestions.append("Your resume seems short; consider adding more detail to your professional experience.")
+
+    return {
+        "match_score": match_score,
+        "matching_skills": matching_skills,
+        "missing_skills": missing_skills,
+        "suggestions": suggestions
+    }
