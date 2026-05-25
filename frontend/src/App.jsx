@@ -1881,10 +1881,6 @@ function App() {
                 <li><strong>4. Match</strong>: Set an active CV and see how you stack up against requirements instantly.</li>
               </ul>
             </div>
-            <div style={{ marginTop: '3rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-              <p>© 2026 JobCollector • Designed for Visual Career Tracking</p>
-              <p style={{ marginTop: '0.5rem' }}>Powered by FastAPI, React & Google Gemini</p>
-            </div>
           </div>
         )}
         {/* SECTION: MY RESUMES */}
@@ -2094,149 +2090,183 @@ function App() {
               </div>
             </div>
           </section>
-        )}
-      </main>
-      {/* 5. JOB DETAILS MODAL */}
-      {showDetailModal && (
-        <div className="modal-overlay">
-          <div className="modal-content" style={{ maxWidth: '650px' }}>
-            <div className="modal-header">
-              <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700 }}>
-                <Briefcase size={20} style={{ color: '#6366f1' }} />
-                <span>Job Specification Details</span>
-              </h3>
-              <button className="clear-btn" style={{ position: 'static' }} onClick={() => setShowDetailModal(null)}>
-                <X size={18} />
-              </button>
+        )
+        }
+        <footer style={{ padding: '3rem 2rem', borderTop: '1px solid var(--border-glass)', marginTop: '4rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+          <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '2rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <Briefcase size={20} style={{ color: '#818cf8' }} />
+              <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>ZenJob</span>
+              <span style={{ opacity: 0.5 }}>|</span>
+              <span>v2.1.0-luxe</span>
             </div>
-            <div className="modal-body job-detail-layout">
-              {showDetailModal.image_path && (
-                <div className="detail-img-container">
-                  <img
-                    src={`${BACKEND_URL}${showDetailModal.image_path}`}
-                    alt="Original Job Advertisement Poster"
-                    className="detail-img"
-                  />
-                </div>
-              )}
-              <div className="detail-grid">
-                {showDetailModal.match_score !== undefined && showDetailModal.match_score !== null && (
-                  <div className="detail-item" style={{ gridColumn: 'span 2', display: 'flex', alignItems: 'center', gap: '1rem', background: 'rgba(255, 255, 255, 0.015)', border: '1px solid var(--border-glass)', borderRadius: '12px', padding: '0.75rem 1rem' }}>
-                    <div style={{ position: 'relative', width: '50px', height: '50px', flexShrink: 0 }}>
-                      <svg width="50" height="50" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)' }}>
-                        <circle cx="50" cy="50" r="40" stroke="rgba(255,255,255,0.05)" strokeWidth="12" fill="transparent" />
-                        <circle cx="50" cy="50" r="40"
-                          stroke={showDetailModal.match_score >= 80 ? '#34d399' : showDetailModal.match_score >= 50 ? '#fbbf24' : '#f87171'}
-                          strokeWidth="12"
-                          fill="transparent"
-                          strokeDasharray={2 * Math.PI * 40}
-                          strokeDashoffset={2 * Math.PI * 40 * (1 - showDetailModal.match_score / 100)}
-                          strokeLinecap="round"
-                        />
-                      </svg>
-                      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-primary)' }}>{showDetailModal.match_score}%</span>
-                      </div>
-                    </div>
-                    <div>
-                      <span className="detail-label" style={{ margin: 0 }}>Resume compatibility match</span>
-                      <span className="detail-val" style={{ fontSize: '0.85rem', color: '#c7d2fe', fontWeight: 600 }}>This job matches {showDetailModal.match_score}% of your active CV's skill profile.</span>
-                    </div>
-                  </div>
-                )}
-                <div className="detail-item">
-                  <span className="detail-label">Company</span>
-                  <span className="detail-val" style={{ color: 'var(--text-primary)', fontSize: '1.1rem', fontWeight: 600 }}>{showDetailModal.company_name}</span>
-                </div>
-                <div className="detail-item">
-                  <span className="detail-label">Job Role</span>
-                  <span className="detail-val" style={{ color: 'var(--text-primary)', fontSize: '1.1rem', fontWeight: 600 }}>{showDetailModal.job_role}</span>
-                </div>
-                <div className="detail-item">
-                  <span className="detail-label">Location</span>
-                  <span className="detail-val">{showDetailModal.location || 'Not Specified'}</span>
-                </div>
-                <div className="detail-item">
-                  <span className="detail-label">Work Mode & Type</span>
-                  <span className="detail-val">{showDetailModal.job_type} — {showDetailModal.work_mode}</span>
-                </div>
-                <div className="detail-item">
-                  <span className="detail-label">Application Status</span>
-                  <span className="detail-val" style={{
-                    fontWeight: 600,
-                    color: getStatusColors(showDetailModal.application_status).text
-                  }}>{showDetailModal.application_status || 'Applied'}</span>
-                </div>
-                <div className="detail-item">
-                  <span className="detail-label">Experience Required</span>
-                  <span className="detail-val">{showDetailModal.experience_required || 'Not Specified'}</span>
-                </div>
-                <div className="detail-item">
-                  <span className="detail-label">Date Collected</span>
-                  <span className="detail-val" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                    <Calendar size={14} style={{ color: '#9ca3af' }} />
-                    <span>{new Date(showDetailModal.extracted_at).toLocaleDateString(undefined, { dateStyle: 'medium' })}</span>
-                  </span>
-                </div>
-                <div className="detail-item">
-                  <span className="detail-label">Email Address</span>
-                  <span className="detail-val">
-                    {showDetailModal.email ? (
-                      <a href={`mailto:${showDetailModal.email}`} style={{ color: '#a5b4fc', textDecoration: 'none' }}>
-                        {showDetailModal.email}
-                      </a>
-                    ) : 'Not Listed'}
-                  </span>
-                </div>
-                <div className="detail-item">
-                  <span className="detail-label">Phone contact</span>
-                  <span className="detail-val">{showDetailModal.phone || 'Not Listed'}</span>
-                </div>
-                {showDetailModal.application_link && (
-                  <div className="detail-item" style={{ gridColumn: 'span 2' }}>
-                    <span className="detail-label">Application Website / Link</span>
-                    <span className="detail-val">
-                      <a
-                        href={showDetailModal.application_link.startsWith('http') ? showDetailModal.application_link : `https://${showDetailModal.application_link}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        style={{ color: '#60a5fa', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
-                      >
-                        <Globe size={14} />
-                        <span style={{ wordBreak: 'break-all' }}>{showDetailModal.application_link}</span>
-                      </a>
-                    </span>
-                  </div>
-                )}
-                <div className="detail-item" style={{ gridColumn: 'span 2' }}>
-                  <span className="detail-label">Required Skills</span>
-                  <div className="skills-tags" style={{ marginTop: '0.25rem' }}>
-                    {Array.isArray(showDetailModal.skills) && showDetailModal.skills.map(skill => (
-                      <span key={skill} className="skill-tag" style={{ background: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)', color: '#d1d5db' }}>{skill}</span>
-                    ))}
-                    {(!showDetailModal.skills || showDetailModal.skills.length === 0) && (
-                      <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>None Listed</span>
-                    )}
-                  </div>
-                </div>
-                {showDetailModal.additional_notes && (
-                  <div className="detail-item" style={{ gridColumn: 'span 2' }}>
-                    <span className="detail-label">Additional notes / Summary</span>
-                    <span className="detail-val" style={{ background: 'var(--bg-input)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border-glass)', whiteSpace: 'pre-line', fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                      {showDetailModal.additional_notes}
-                    </span>
-                  </div>
-                )}
+            <div style={{ display: 'flex', gap: '2rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <span style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)' }}>Status</span>
+                <span style={{ color: '#34d399', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                  <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#34d399', boxShadow: '0 0 8px #34d399' }}></div>
+                  Uplink Active
+                </span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <span style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)' }}>Engine</span>
+                <span>Gemini Pro Multimodal</span>
               </div>
             </div>
-            <div className="modal-footer">
-              <button type="button" className="btn btn-secondary" onClick={() => setShowDetailModal(null)}>
-                Close Details
-              </button>
+            <div style={{ display: 'flex', gap: '1.5rem', fontSize: '0.75rem' }}>
+              <span>Privacy</span>
+              <span>Terms</span>
+              <span>Support</span>
             </div>
           </div>
-        </div>
-      )}
+          <div style={{ textAlign: 'center', marginTop: '2.5rem', opacity: 0.5 }}>
+            © {new Date().getFullYear()} ZenJob. Built for High-Performance Career Tracking.
+          </div>
+        </footer>
+      </main >
+      {/* 5. JOB DETAILS MODAL */}
+      {
+        showDetailModal && (
+          <div className="modal-overlay">
+            <div className="modal-content" style={{ maxWidth: '650px' }}>
+              <div className="modal-header">
+                <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700 }}>
+                  <Briefcase size={20} style={{ color: '#6366f1' }} />
+                  <span>Job Specification Details</span>
+                </h3>
+                <button className="clear-btn" style={{ position: 'static' }} onClick={() => setShowDetailModal(null)}>
+                  <X size={18} />
+                </button>
+              </div>
+              <div className="modal-body job-detail-layout">
+                {showDetailModal.image_path && (
+                  <div className="detail-img-container">
+                    <img
+                      src={`${BACKEND_URL}${showDetailModal.image_path}`}
+                      alt="Original Job Advertisement Poster"
+                      className="detail-img"
+                    />
+                  </div>
+                )}
+                <div className="detail-grid">
+                  {showDetailModal.match_score !== undefined && showDetailModal.match_score !== null && (
+                    <div className="detail-item" style={{ gridColumn: 'span 2', display: 'flex', alignItems: 'center', gap: '1rem', background: 'rgba(255, 255, 255, 0.015)', border: '1px solid var(--border-glass)', borderRadius: '12px', padding: '0.75rem 1rem' }}>
+                      <div style={{ position: 'relative', width: '50px', height: '50px', flexShrink: 0 }}>
+                        <svg width="50" height="50" viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)' }}>
+                          <circle cx="50" cy="50" r="40" stroke="rgba(255,255,255,0.05)" strokeWidth="12" fill="transparent" />
+                          <circle cx="50" cy="50" r="40"
+                            stroke={showDetailModal.match_score >= 80 ? '#34d399' : showDetailModal.match_score >= 50 ? '#fbbf24' : '#f87171'}
+                            strokeWidth="12"
+                            fill="transparent"
+                            strokeDasharray={2 * Math.PI * 40}
+                            strokeDashoffset={2 * Math.PI * 40 * (1 - showDetailModal.match_score / 100)}
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-primary)' }}>{showDetailModal.match_score}%</span>
+                        </div>
+                      </div>
+                      <div>
+                        <span className="detail-label" style={{ margin: 0 }}>Resume compatibility match</span>
+                        <span className="detail-val" style={{ fontSize: '0.85rem', color: '#c7d2fe', fontWeight: 600 }}>This job matches {showDetailModal.match_score}% of your active CV's skill profile.</span>
+                      </div>
+                    </div>
+                  )}
+                  <div className="detail-item">
+                    <span className="detail-label">Company</span>
+                    <span className="detail-val" style={{ color: 'var(--text-primary)', fontSize: '1.1rem', fontWeight: 600 }}>{showDetailModal.company_name}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">Job Role</span>
+                    <span className="detail-val" style={{ color: 'var(--text-primary)', fontSize: '1.1rem', fontWeight: 600 }}>{showDetailModal.job_role}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">Location</span>
+                    <span className="detail-val">{showDetailModal.location || 'Not Specified'}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">Work Mode & Type</span>
+                    <span className="detail-val">{showDetailModal.job_type} — {showDetailModal.work_mode}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">Application Status</span>
+                    <span className="detail-val" style={{
+                      fontWeight: 600,
+                      color: getStatusColors(showDetailModal.application_status).text
+                    }}>{showDetailModal.application_status || 'Applied'}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">Experience Required</span>
+                    <span className="detail-val">{showDetailModal.experience_required || 'Not Specified'}</span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">Date Collected</span>
+                    <span className="detail-val" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      <Calendar size={14} style={{ color: '#9ca3af' }} />
+                      <span>{new Date(showDetailModal.extracted_at).toLocaleDateString(undefined, { dateStyle: 'medium' })}</span>
+                    </span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">Email Address</span>
+                    <span className="detail-val">
+                      {showDetailModal.email ? (
+                        <a href={`mailto:${showDetailModal.email}`} style={{ color: '#a5b4fc', textDecoration: 'none' }}>
+                          {showDetailModal.email}
+                        </a>
+                      ) : 'Not Listed'}
+                    </span>
+                  </div>
+                  <div className="detail-item">
+                    <span className="detail-label">Phone contact</span>
+                    <span className="detail-val">{showDetailModal.phone || 'Not Listed'}</span>
+                  </div>
+                  {showDetailModal.application_link && (
+                    <div className="detail-item" style={{ gridColumn: 'span 2' }}>
+                      <span className="detail-label">Application Website / Link</span>
+                      <span className="detail-val">
+                        <a
+                          href={showDetailModal.application_link.startsWith('http') ? showDetailModal.application_link : `https://${showDetailModal.application_link}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{ color: '#60a5fa', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+                        >
+                          <Globe size={14} />
+                          <span style={{ wordBreak: 'break-all' }}>{showDetailModal.application_link}</span>
+                        </a>
+                      </span>
+                    </div>
+                  )}
+                  <div className="detail-item" style={{ gridColumn: 'span 2' }}>
+                    <span className="detail-label">Required Skills</span>
+                    <div className="skills-tags" style={{ marginTop: '0.25rem' }}>
+                      {Array.isArray(showDetailModal.skills) && showDetailModal.skills.map(skill => (
+                        <span key={skill} className="skill-tag" style={{ background: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.1)', color: '#d1d5db' }}>{skill}</span>
+                      ))}
+                      {(!showDetailModal.skills || showDetailModal.skills.length === 0) && (
+                        <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>None Listed</span>
+                      )}
+                    </div>
+                  </div>
+                  {showDetailModal.additional_notes && (
+                    <div className="detail-item" style={{ gridColumn: 'span 2' }}>
+                      <span className="detail-label">Additional notes / Summary</span>
+                      <span className="detail-val" style={{ background: 'var(--bg-input)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border-glass)', whiteSpace: 'pre-line', fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                        {showDetailModal.additional_notes}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={() => setShowDetailModal(null)}>
+                  Close Details
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      }
       <MatchAnalysisModal analysis={activeAnalysis} onClose={() => setActiveAnalysis(null)} />
     </div>
   );
