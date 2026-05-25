@@ -1850,8 +1850,8 @@ function App() {
               <p style={{ fontSize: '1.1rem', color: 'var(--text-secondary)' }}>Your Cyber-Luxe Career Navigator</p>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '3rem' }}>
-              <div className="glass-panel" style={{ padding: '1.5rem', background: 'rgba(255,255,255,0.02)' }}>
-                <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'white', display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+              <div className="glass-panel" style={{ padding: '1.5rem', background: 'var(--bg-input)' }}>
+                <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
                   <Sparkles size={18} style={{ color: '#8b5cf6' }} />
                   AI-Powered Extraction
                 </h3>
@@ -1859,8 +1859,8 @@ function App() {
                   Leverage advanced Gemini AI to instantly extract structured job details from screenshots, raw text, or URLs. No more manual data entry.
                 </p>
               </div>
-              <div className="glass-panel" style={{ padding: '1.5rem', background: 'rgba(255,255,255,0.02)' }}>
-                <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'white', display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+              <div className="glass-panel" style={{ padding: '1.5rem', background: 'var(--bg-input)' }}>
+                <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
                   <Layers size={18} style={{ color: '#8b5cf6' }} />
                   Smart Resume Matching
                 </h3>
@@ -1869,8 +1869,8 @@ function App() {
                 </p>
               </div>
             </div>
-            <div className="glass-panel" style={{ padding: '2rem', border: '1px solid rgba(139, 92, 246, 0.2)', background: 'rgba(139, 92, 246, 0.05)' }}>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'white', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div className="glass-panel" style={{ padding: '2rem', border: '1px solid rgba(139, 92, 246, 0.2)', background: 'var(--bg-input)' }}>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                 <Info size={20} style={{ color: '#8b5cf6' }} />
                 How it Works
               </h3>
