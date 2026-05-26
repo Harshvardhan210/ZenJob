@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { Mail, Lock, UserPlus, LogIn, AlertTriangle, Check, User } from 'lucide-react';
+import { Mail, Lock, UserPlus, LogIn, AlertTriangle, Check, User, ArrowLeft } from 'lucide-react';
 import { auth } from './firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from 'firebase/auth';
 
-function AuthScreen({ setIsRegistering }) {
+function AuthScreen({ setIsRegistering, onBack }) {
   const [isLogin, setIsLogin] = useState(true);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -92,6 +92,31 @@ function AuthScreen({ setIsRegistering }) {
         <div className="glow-effect" style={{ position: 'absolute', top: '-50%', left: '-50%', width: '200%', height: '200%', background: 'radial-gradient(circle, rgba(139, 92, 246, 0.1) 0%, transparent 70%)', zIndex: 0, pointerEvents: 'none' }}></div>
 
         <div style={{ position: 'relative', zIndex: 1 }}>
+          {onBack && (
+            <button
+              onClick={onBack}
+              style={{
+                position: 'absolute',
+                top: '-1.5rem',
+                left: '-0.5rem',
+                background: 'none',
+                border: 'none',
+                color: 'var(--text-secondary)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+                transition: 'color 0.2s',
+                zIndex: 10
+              }}
+              onMouseEnter={e => e.target.style.color = '#818cf8'}
+              onMouseLeave={e => e.target.style.color = 'var(--text-secondary)'}
+            >
+              <ArrowLeft size={16} />
+              <span>Back</span>
+            </button>
+          )}
           <h1 style={{ fontSize: '2rem', fontWeight: '800', background: 'linear-gradient(to right, #818cf8, #c084fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '0.5rem', letterSpacing: '-0.02em' }}>
             {isLogin ? 'Welcome Back' : 'Initialize Account'}
           </h1>

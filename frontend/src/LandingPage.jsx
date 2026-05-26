@@ -47,7 +47,7 @@ function LandingPage({ onGetStarted, theme, setTheme }) {
         </h1>
 
         <p className="fade-in" style={{ fontSize: 'clamp(1rem, 2vw, 1.25rem)', color: 'var(--text-secondary)', maxWidth: '700px', marginBottom: '3rem', lineHeight: '1.6', animationDelay: '0.3s' }}>
-          Extract data from any job poster instantly with Gemini AI. Match your resume against live requirements, track applications, and export stunning executive reports.
+          Deconstruct any job poster with advanced AI precision. Instantly align your unique skill profile with market demand, orchestrate your applications, and generate executive-grade career reports.
         </p>
 
         <div className="fade-in" style={{ animationDelay: '0.4s', display: 'flex', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center' }}>
@@ -126,6 +126,21 @@ function LandingPage({ onGetStarted, theme, setTheme }) {
           </div>
         </div>
 
+        {/* Motivational Slogan Section */}
+        <div className="fade-in" style={{ marginTop: '8rem', textAlign: 'center', width: '100%', maxWidth: '800px', animationDelay: '0.75s' }}>
+          <div style={{ position: 'relative', padding: '3rem', borderRadius: '32px', background: 'rgba(99, 102, 241, 0.03)', border: '1px solid rgba(99, 102, 241, 0.1)' }}>
+            <div style={{ color: '#818cf8', marginBottom: '1.5rem', opacity: 0.6 }}>
+              <Sparkles size={32} style={{ margin: '0 auto' }} />
+            </div>
+            <h2 style={{ fontSize: '1.75rem', fontWeight: '800', fontStyle: 'italic', color: 'var(--text-primary)', marginBottom: '1rem', lineHeight: '1.4' }}>
+              "The future belongs to those who prepare for it today. ZenJob is your hangar for a high-performance career pursuit."
+            </h2>
+            <p style={{ color: '#818cf8', fontWeight: '600', fontSize: '0.9rem', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+              — ZenJob Philosophy
+            </p>
+          </div>
+        </div>
+
         {/* CTA Section */}
         <div className="fade-in" style={{ marginTop: '8rem', marginBottom: '4rem', padding: '4rem', borderRadius: '32px', background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%)', border: '1px solid var(--border-glass)', width: '100%', animationDelay: '0.8s' }}>
           <h2 style={{ fontSize: '2.25rem', fontWeight: '800', marginBottom: '1.5rem' }}>Ready to optimize your career?</h2>
@@ -167,9 +182,9 @@ function LandingPage({ onGetStarted, theme, setTheme }) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <h4 style={{ fontSize: '0.9rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-primary)' }}>Connect</h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-              <span>Twitter</span>
-              <span>LinkedIn</span>
-              <span>GitHub</span>
+              <a href="https://x.com/harshvardhant42" target="_blank" rel="noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>Twitter (X)</a>
+              <a href="https://www.linkedin.com/in/harsh-vardhantiwari/" target="_blank" rel="noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>LinkedIn</a>
+              <a href="https://github.com/Harshvardhan210/MagicCounter" target="_blank" rel="noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>GitHub</a>
             </div>
           </div>
         </div>

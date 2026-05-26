@@ -229,6 +229,13 @@ function App() {
   const [activeAnalysis, setActiveAnalysis] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [footerModal, setFooterModal] = useState(null); // 'privacy' | 'terms' | 'support'
+
+  // --- EDIT MODAL STATE ---
+  const [editModalJob, setEditModalJob] = useState(null); // null = closed
+  const [editModalData, setEditModalData] = useState({});
+  const [editModalSkillInput, setEditModalSkillInput] = useState('');
+  const [isEditModalSaving, setIsEditModalSaving] = useState(false);
 
   // --- LIFECYCLE ---
 
@@ -479,6 +486,56 @@ function App() {
       setIsSaving(false);
     }
   };
+
+  // --- EDIT MODAL HANDLERS ---
+  const openEditModal = (job) => {
+    setEditModalData({
+      id: job.id,
+      company_name: job.company_name || '',
+      job_role: job.job_role || '',
+      email: job.email || '',
+      phone: job.phone || '',
+      location: job.location || '',
+      job_type: job.job_type || 'Full-time',
+      work_mode: job.work_mode || 'Remote',
+      skills: Array.isArray(job.skills) ? [...job.skills] : [],
+      experience_required: job.experience_required || '',
+      application_link: job.application_link || '',
+      additional_notes: job.additional_notes || '',
+      application_status: job.application_status || 'Applied',
+    });
+    setEditModalSkillInput('');
+    setEditModalJob(job);
+  };
+
+  const closeEditModal = () => {
+    setEditModalJob(null);
+    setEditModalData({});
+    setEditModalSkillInput('');
+  };
+
+  const handleEditModalSave = async (e) => {
+    e.preventDefault();
+    setIsEditModalSaving(true);
+    try {
+      const authHeaders = await getAuthHeaders();
+      const response = await fetch(`${BACKEND_URL}/api/jobs/${editModalData.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...authHeaders },
+        body: JSON.stringify(editModalData)
+      });
+      if (!response.ok) throw new Error('Failed to update job');
+      const updated = await response.json();
+      setJobs(prev => prev.map(j => j.id === updated.id ? updated : j));
+      showToast('Job updated successfully!', 'success');
+      closeEditModal();
+    } catch (error) {
+      showToast('Error: ' + error.message, 'error');
+    } finally {
+      setIsEditModalSaving(false);
+    }
+  };
+
   const handleDeleteJob = (id) => {
     showConfirm("Delete this job posting? Its stored image will also be removed.", async () => {
       try {
@@ -812,7 +869,7 @@ function App() {
     if (showLanding) {
       return <LandingPage onGetStarted={() => setShowLanding(false)} theme={theme} setTheme={setTheme} />;
     }
-    return <AuthScreen setIsRegistering={setIsRegistering} />;
+    return <AuthScreen setIsRegistering={setIsRegistering} onBack={() => setShowLanding(true)} />;
   }
   if (activeSection === 'welcome') {
     return (
@@ -901,6 +958,244 @@ function App() {
           </div>
         </div>
       )}
+
+      {/* JOB EDIT MODAL */}
+      {editModalJob && (
+        <div className="modal-overlay" onClick={closeEditModal} style={{ zIndex: 2500 }}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '780px', width: '95%', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div className="modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div className="icon-box" style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(99, 102, 241, 0.12)', color: '#818cf8' }}>
+                  <Edit3 size={20} />
+                </div>
+                <div>
+                  <h2 style={{ fontSize: '1.3rem', fontWeight: '800', background: 'linear-gradient(to right, #818cf8, #c084fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                    Edit Job Details
+                  </h2>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{editModalJob.company_name} · {editModalJob.job_role}</p>
+                </div>
+              </div>
+              <button className="btn-close" onClick={closeEditModal}><X size={20} /></button>
+            </div>
+
+            <div className="modal-body" style={{ padding: '1.25rem 0' }}>
+              <form onSubmit={handleEditModalSave} className="form-grid">
+                <div className="form-group">
+                  <label>Company Name</label>
+                  <input type="text" required className="form-control" placeholder="e.g. Google, TechLabs"
+                    value={editModalData.company_name}
+                    onChange={e => setEditModalData(p => ({ ...p, company_name: e.target.value }))} />
+                </div>
+                <div className="form-group">
+                  <label>Job Role / Title</label>
+                  <input type="text" required className="form-control" placeholder="e.g. React Developer"
+                    value={editModalData.job_role}
+                    onChange={e => setEditModalData(p => ({ ...p, job_role: e.target.value }))} />
+                </div>
+                <div className="form-group">
+                  <label>Email Address</label>
+                  <input type="email" className="form-control" placeholder="hr@company.com"
+                    value={editModalData.email}
+                    onChange={e => setEditModalData(p => ({ ...p, email: e.target.value }))} />
+                </div>
+                <div className="form-group">
+                  <label>Contact Phone</label>
+                  <input type="text" className="form-control" placeholder="+1 (555) 0199"
+                    value={editModalData.phone}
+                    onChange={e => setEditModalData(p => ({ ...p, phone: e.target.value }))} />
+                </div>
+                <div className="form-group">
+                  <label>Location</label>
+                  <input type="text" className="form-control" placeholder="e.g. New Delhi"
+                    value={editModalData.location}
+                    onChange={e => setEditModalData(p => ({ ...p, location: e.target.value }))} />
+                </div>
+                <div className="form-group">
+                  <label>Experience Required</label>
+                  <input type="text" className="form-control" placeholder="e.g. 2+ years"
+                    value={editModalData.experience_required}
+                    onChange={e => setEditModalData(p => ({ ...p, experience_required: e.target.value }))} />
+                </div>
+                <div className="form-group">
+                  <label>Job Type</label>
+                  <select className="form-control" value={editModalData.job_type}
+                    onChange={e => setEditModalData(p => ({ ...p, job_type: e.target.value }))}>
+                    <option value="Full-time">Full-time</option>
+                    <option value="Part-time">Part-time</option>
+                    <option value="Internship">Internship</option>
+                    <option value="Contract">Contract</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Work Mode</label>
+                  <select className="form-control" value={editModalData.work_mode}
+                    onChange={e => setEditModalData(p => ({ ...p, work_mode: e.target.value }))}>
+                    <option value="Remote">Remote</option>
+                    <option value="On-site">On-site</option>
+                    <option value="Hybrid">Hybrid</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Application Status</label>
+                  <select className="form-control" value={editModalData.application_status}
+                    onChange={e => setEditModalData(p => ({ ...p, application_status: e.target.value }))}>
+                    <option value="Applied">Applied</option>
+                    <option value="Test Process">Test Process</option>
+                    <option value="Screening">Screening</option>
+                    <option value="Pending response">Pending response</option>
+                    <option value="Rejected">Rejected</option>
+                    <option value="Selected">Selected</option>
+                  </select>
+                </div>
+                <div className="form-group span-2">
+                  <label>Application Website / Link</label>
+                  <input type="text" className="form-control" placeholder="https://jobs.company.com/apply"
+                    value={editModalData.application_link}
+                    onChange={e => setEditModalData(p => ({ ...p, application_link: e.target.value }))} />
+                </div>
+                <div className="form-group span-2">
+                  <label>Skills Required (Enter to add)</label>
+                  <div className="skills-input-container">
+                    <input type="text" className="form-control" placeholder="e.g. React, Python"
+                      value={editModalSkillInput}
+                      onChange={e => setEditModalSkillInput(e.target.value)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          const s = editModalSkillInput.trim();
+                          if (s && !editModalData.skills.includes(s)) {
+                            setEditModalData(p => ({ ...p, skills: [...p.skills, s] }));
+                          }
+                          setEditModalSkillInput('');
+                        }
+                      }} />
+                    <button type="button" className="btn btn-secondary" onClick={() => {
+                      const s = editModalSkillInput.trim();
+                      if (s && !editModalData.skills.includes(s)) {
+                        setEditModalData(p => ({ ...p, skills: [...p.skills, s] }));
+                      }
+                      setEditModalSkillInput('');
+                    }}><Plus size={18} /></button>
+                  </div>
+                  <div className="skills-tags" style={{ marginTop: '0.5rem' }}>
+                    {editModalData.skills.map(skill => (
+                      <span key={skill} className="skill-tag">
+                        <span>{skill}</span>
+                        <button type="button" className="remove-tag-btn"
+                          onClick={() => setEditModalData(p => ({ ...p, skills: p.skills.filter(s => s !== skill) }))}>
+                          <X size={12} />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div className="form-group span-2">
+                  <label>Additional Notes / Summary</label>
+                  <textarea rows="3" className="form-control" placeholder="Add any extra job requirements..."
+                    value={editModalData.additional_notes}
+                    onChange={e => setEditModalData(p => ({ ...p, additional_notes: e.target.value }))} />
+                </div>
+
+                <div className="modal-footer span-2" style={{ marginTop: '0.5rem' }}>
+                  <button type="button" className="btn btn-secondary" onClick={closeEditModal}>Cancel</button>
+                  <button type="submit" disabled={isEditModalSaving} className="btn btn-primary" style={{ minWidth: '140px' }}>
+                    <Check size={18} />
+                    <span>{isEditModalSaving ? 'Saving...' : 'Save Changes'}</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* FOOTER LEGAL & SUPPORT MODAL */}
+      {footerModal && (
+        <div className="modal-overlay" onClick={() => setFooterModal(null)} style={{ zIndex: 3500 }}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '600px', width: '90%' }}>
+            <div className="modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div style={{ color: '#818cf8' }}>
+                  {footerModal === 'privacy' ? <Eye size={22} /> : footerModal === 'terms' ? <FileText size={22} /> : <Mail size={22} />}
+                </div>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 700, textTransform: 'capitalize' }}>{footerModal} {footerModal !== 'support' ? 'Policy' : ''}</h3>
+              </div>
+              <button className="btn-close" onClick={() => setFooterModal(null)}><X size={20} /></button>
+            </div>
+            <div className="modal-body" style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: '1.6' }}>
+              {footerModal === 'privacy' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <p>Your privacy is paramount at ZenJob. This describes how we handle your career data.</p>
+                  <section>
+                    <h4 style={{ color: 'var(--text-primary)', marginBottom: '0.35rem' }}>1. Data Extraction</h4>
+                    <p>When you upload job flyers or paste descriptions, our AI server extracts technical requirements. This data is stored securely in your private career dashboard.</p>
+                  </section>
+                  <section>
+                    <h4 style={{ color: 'var(--text-primary)', marginBottom: '0.35rem' }}>2. Resume Analysis</h4>
+                    <p>Resume matching happens purely on our secure servers. Your CV is never shared with third parties or used for training public AI models without explicit consent.</p>
+                  </section>
+                  <section>
+                    <h4 style={{ color: 'var(--text-primary)', marginBottom: '0.35rem' }}>3. Your Controls</h4>
+                    <p>You can delete any job posting or resume at any time. Deletion is permanent and removes the data from our active databases and file storage.</p>
+                  </section>
+                </div>
+              )}
+              {footerModal === 'terms' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  <p>By using the ZenJob High-Performance Career Portal, you agree to these operating parameters.</p>
+                  <section>
+                    <h4 style={{ color: 'var(--text-primary)', marginBottom: '0.35rem' }}>1. AI Disclaimer</h4>
+                    <p>AI extraction and matching scores are probabilistic. While highly accurate, users should verify critical contact information and job details before applying.</p>
+                  </section>
+                  <section>
+                    <h4 style={{ color: 'var(--text-primary)', marginBottom: '0.35rem' }}>2. Usage Limits</h4>
+                    <p>This portal is for personal career tracking only. Automated scraping or bulk-loading data from this interface is prohibited to ensure peak performance for all collectors.</p>
+                  </section>
+                  <section>
+                    <h4 style={{ color: 'var(--text-primary)', marginBottom: '0.35rem' }}>3. Data Integrity</h4>
+                    <p>Users are responsible for the legality of the job advertisements they track. ZenJob provides the infrastructure; you provide the pursuit.</p>
+                  </section>
+                </div>
+              )}
+              {footerModal === 'support' && (
+                <div style={{ textAlign: 'center', padding: '1rem 0' }}>
+                  <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'rgba(99, 102, 241, 0.1)', color: '#818cf8', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>
+                    <Phone size={28} />
+                  </div>
+                  <h4 style={{ color: 'var(--text-primary)', marginBottom: '1rem' }}>Need Technical Assistance?</h4>
+                  <div style={{ display: 'grid', gap: '1rem', textAlign: 'left' }}>
+                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', background: 'rgba(255,255,255,0.05)', padding: '1rem', borderRadius: '12px' }}>
+                      <Mail size={18} style={{ color: '#818cf8' }} />
+                      <div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Email Support</div>
+                        <div style={{ fontWeight: 600 }}>support@zenjob.ai</div>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', background: 'rgba(255,255,255,0.05)', padding: '1rem', borderRadius: '12px' }}>
+                      <Globe size={18} style={{ color: '#818cf8' }} />
+                      <div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Help Center</div>
+                        <div style={{ fontWeight: 600 }}>docs.zenjob.ai</div>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', background: 'rgba(255,255,255,0.05)', padding: '1rem', borderRadius: '12px' }}>
+                      <Layers size={18} style={{ color: '#8b5cf6' }} />
+                      <div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Community</div>
+                        <div style={{ fontWeight: 600 }}>Discord High-Performers</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="modal-footer" style={{ marginTop: '1.5rem' }}>
+              <button className="btn btn-secondary w-full" onClick={() => setFooterModal(null)}>Close Overlay</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* SIDEBAR NAVIGATION */}
       <aside className="sidebar">
         <div className="brand" style={{ padding: '0 0.5rem', marginBottom: '1rem' }}>
@@ -1691,7 +1986,6 @@ function App() {
                         <th>Work Mode</th>
                         <th>Required Skills</th>
                         <th>Contact Email</th>
-                        <th>Match</th>
                         <th>Status</th>
                         <th>Date Applied</th>
                         <th>Actions</th>
@@ -1744,38 +2038,6 @@ function App() {
                             )}
                           </td>
                           <td>
-                            {job.match_score !== undefined && job.match_score !== null ? (
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                                <span style={{
-                                  width: '8px',
-                                  height: '8px',
-                                  borderRadius: '50%',
-                                  background: job.match_score >= 80 ? '#34d399' : job.match_score >= 50 ? '#fbbf24' : '#f87171',
-                                  display: 'inline-block',
-                                  boxShadow: `0 0 6px ${job.match_score >= 80 ? '#34d399' : job.match_score >= 50 ? '#fbbf24' : '#f87171'}`
-                                }}></span>
-                                <span style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.85rem' }}>{job.match_score}%</span>
-                              </div>
-                            ) : (
-                              <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>—</span>
-                            )}
-                          </td>
-                          <td>
-                            {job.extracted_at ? (
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', whiteSpace: 'nowrap' }}>
-                                <Calendar size={13} style={{ color: '#8b5cf6', flexShrink: 0 }} />
-                                <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
-                                  {(() => {
-                                    const d = new Date(job.extracted_at.replace(' ', 'T'));
-                                    return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-                                  })()}
-                                </span>
-                              </div>
-                            ) : (
-                              <span style={{ color: 'var(--text-muted)' }}>—</span>
-                            )}
-                          </td>
-                          <td>
                             <select
                               className={`badge`}
                               style={{
@@ -1796,24 +2058,27 @@ function App() {
                               <option value="Selected" style={{ background: '#1f2937', color: 'white' }}>Selected</option>
                             </select>
                           </td>
+                          <td>
+                            {job.extracted_at ? (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', whiteSpace: 'nowrap' }}>
+                                <Calendar size={13} style={{ color: '#8b5cf6', flexShrink: 0 }} />
+                                <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+                                  {(() => {
+                                    const d = new Date(job.extracted_at.replace(' ', 'T'));
+                                    return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+                                  })()}
+                                </span>
+                              </div>
+                            ) : (
+                              <span style={{ color: 'var(--text-muted)' }}>—</span>
+                            )}
+                          </td>
                           <td style={{ textAlign: 'right' }}>
                             <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
                               <button
                                 className="btn btn-secondary"
-                                style={{ padding: '0.4rem', borderRadius: '8px', color: '#a78bfa' }}
-                                onClick={() => handleAnalyzeMatch(job.id)}
-                                title="AI Match Analysis"
-                              >
-                                <Sparkles size={16} />
-                              </button>
-                              <button
-                                className="btn btn-secondary"
                                 style={{ padding: '0.4rem', borderRadius: '8px' }}
-                                onClick={() => {
-                                  setEditedData({ ...job });
-                                  setIsEditing(true);
-                                  setActiveSection('extractor');
-                                }}
+                                onClick={() => openEditModal(job)}
                                 title="Edit Details"
                               >
                                 <Edit3 size={16} />
@@ -2108,15 +2373,19 @@ function App() {
                   Uplink Active
                 </span>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <span style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-secondary)' }}>Engine</span>
-                <span>Gemini Pro Multimodal</span>
-              </div>
             </div>
             <div style={{ display: 'flex', gap: '1.5rem', fontSize: '0.75rem' }}>
-              <span>Privacy</span>
-              <span>Terms</span>
-              <span>Support</span>
+              <a href="https://x.com/harshvardhant42" target="_blank" rel="noreferrer" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Twitter</a>
+              <a href="https://www.linkedin.com/in/harsh-vardhantiwari/" target="_blank" rel="noreferrer" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>LinkedIn</a>
+              <a href="https://github.com/Harshvardhan210/MagicCounter" target="_blank" rel="noreferrer" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>GitHub</a>
+              <span style={{ opacity: 0.3 }}>|</span>
+              {['privacy', 'terms', 'support'].map(key => (
+                <button key={key} onClick={() => setFooterModal(key)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '0.75rem', padding: 0, textTransform: 'capitalize', transition: 'color 0.2s' }}
+                  onMouseEnter={e => e.target.style.color = '#a5b4fc'}
+                  onMouseLeave={e => e.target.style.color = 'var(--text-muted)'}
+                >{key.charAt(0).toUpperCase() + key.slice(1)}</button>
+              ))}
             </div>
           </div>
           <div style={{ textAlign: 'center', marginTop: '2.5rem', opacity: 0.5 }}>
