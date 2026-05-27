@@ -9,8 +9,13 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from .models import JobExtraction
 
+import platform
+
 # If tesseract is not in PATH, you can set it here:
-pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+if platform.system() == "Windows":
+    pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+# On Linux/Docker, it will be in the system PATH.
+
 
 def parse_job_text(text: str) -> JobExtraction:
     """

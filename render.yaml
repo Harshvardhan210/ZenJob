@@ -2,17 +2,35 @@ services:
   # Backend FastAPI Service (ZenJob)
   - type: web
     name: zenjob-backend
-    env: python
+    runtime: docker
+    dockerContext: backend
+    dockerfilePath: backend/Dockerfile
     region: ohio
+
     plan: free
-    buildCommand: cd backend && pip install -r requirements.txt
-    startCommand: cd backend && gunicorn app.main:app -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT
+    repo: https://github.com/Harshvardhan210/ZenJob # Make sure this matches your repo
     envVars:
+      - key: FIREBASE_SERVICE_ACCOUNT_JSON
+        sync: false # This will prompt for the value in Render UI
       - key: ALLOWED_ORIGINS
-        value: "*" # Initially allow all, then update to your Vercel URL
-      - key: PYTHON_VERSION
-        value: 3.10.0
+        value: "*"
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: PORT
+        value: 8000
+
     disk:
       name: jobs-data-disk
       mountPath: /app/backend/uploads
       sizeGB: 1
+
+  # Frontend React Service (ZenJob UI)
+  - type: static
+    name: zenjob-frontend
+    env: static
+    buildCommand: cd frontend && npm install && npm run build
+    publishPath: frontend/dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        sync: false # This will prompt for the Render Backend URL
+

@@ -8,16 +8,25 @@ logger = logging.getLogger(__name__)
 
 # Initialize Firebase Admin
 # Expecting the service account JSON to be placed in the backend directory
+# or its content provided via FIREBASE_SERVICE_ACCOUNT_JSON environment variable
 cred_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "firebase-adminsdk.json")
+
 try:
-    if os.path.exists(cred_path):
+    if os.getenv("FIREBASE_SERVICE_ACCOUNT_JSON"):
+        import json
+        cred_dict = json.loads(os.getenv("FIREBASE_SERVICE_ACCOUNT_JSON"))
+        cred = credentials.Certificate(cred_dict)
+        firebase_admin.initialize_app(cred)
+        logger.info("Firebase Admin initialized via environment variable.")
+    elif os.path.exists(cred_path):
         cred = credentials.Certificate(cred_path)
         firebase_admin.initialize_app(cred)
-        logger.info("Firebase Admin initialized successfully.")
+        logger.info("Firebase Admin initialized via JSON file.")
     else:
-        logger.warning(f"Firebase Admin SDK JSON not found at {cred_path}. Authentication will fail until it is provided.")
+        logger.warning(f"Firebase Admin SDK JSON not found and FIREBASE_SERVICE_ACCOUNT_JSON not set. Authentication will fail.")
 except Exception as e:
     logger.warning(f"Failed to initialize Firebase Admin: {str(e)}")
+
 
 async def get_current_user(request: Request) -> str:
     """Dependency to verify the Firebase ID token in the Authorization header."""

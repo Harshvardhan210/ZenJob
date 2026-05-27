@@ -184,7 +184,8 @@ function LandingPage({ onGetStarted, theme, setTheme }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
               <a href="https://x.com/harshvardhant42" target="_blank" rel="noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>Twitter (X)</a>
               <a href="https://www.linkedin.com/in/harsh-vardhantiwari/" target="_blank" rel="noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>LinkedIn</a>
-              <a href="https://github.com/Harshvardhan210/MagicCounter" target="_blank" rel="noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>GitHub</a>
+              <a href="https://github.com/Harshvardhan210/ZenJob" target="_blank" rel="noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>GitHub</a>
+
             </div>
           </div>
         </div>

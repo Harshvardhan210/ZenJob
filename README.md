@@ -1,4 +1,4 @@
-# ✨ MagicCounter — AI Job Application Tracker & Resume Matcher
+# ✨ ZenJob — Premium AI Job Application Tracker & Resume Matcher
 
 [![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=FastAPI&logoColor=white)](https://fastapi.tiangolo.com/)
 [![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://react.dev/)
@@ -7,7 +7,7 @@
 [![Capacitor](https://img.shields.io/badge/Capacitor-119EFF?style=for-the-badge&logo=capacitor&logoColor=white)](https://capacitorjs.com/)
 [![Vite](https://img.shields.io/badge/Vite-B73BFE?style=for-the-badge&logo=vite&logoColor=FFD627)](https://vitejs.dev/)
 
-> **MagicCounter (ZenJob)** is a premium, full-stack, AI-powered application designed to streamline and supercharge your job hunting journey. By leveraging **Local OCR (Tesseract)** and **TF-IDF NLP Matching**, MagicCounter turns messy job screenshots, raw descriptions, and URLs into clean, structured data locally and securely. Furthermore, it automatically evaluates your active resume against job listings to provide instant compatibility scoring, custom skill gap analyses, and dynamic improvement tips.
+> **ZenJob** is a premium, full-stack, AI-powered application designed to streamline and supercharge your job hunting journey. By leveraging **Local OCR (Tesseract)** and **TF-IDF NLP Matching**, ZenJob turns messy job screenshots, raw descriptions, and URLs into clean, structured data locally and securely. Furthermore, it automatically evaluates your active resume against job listings to provide instant compatibility scoring, custom skill gap analyses, and dynamic improvement tips.
 
 ---
 
@@ -34,10 +34,6 @@
 ### 5. 📥 Engineered Excel Export
 * **Styled Spreadsheets:** Download a fully formatted Excel workbook with professional **Slate Indigo theme**, custom zebra-striping, and data validation rules.
 
-### 6. 🌓 Dual-Theme "Zen Pearl" UI
-* **High Contrast Light Mode:** Optimized "Zen Pearl" light mode with theme-aware CSS variables for perfect visibility.
-* **Smooth Transitions:** Premium animations and glassmorphism layouts across all screens.
-
 ---
 
 ## 🛠️ Tech Stack & Architecture
@@ -53,68 +49,30 @@ graph TD
     C -->|TTL Caching| G[In-Process Cache]
 ```
 
-### Backend
-* **FastAPI** — High-performance, asynchronous REST API.
-* **Firebase Cloud Firestore** — Scalable, cloud-native storage for jobs and resumes.
-* **Pytesseract (Tesseract OCR)** — Local image-to-text extraction.
-* **scikit-learn** — Powering TF-IDF cosine similarity for resume matching.
-* **In-Process TTL Caching** — Optimized retrieval of job and resume data.
-
-### Frontend
-* **React + Vite** — High-speed, responsive development.
-* **Firebase Authentication** — Secure, multi-tenant user access.
-* **Capacitor JS** — Native Android container support.
-* **Lucide React** — Premium iconography.
-
 ---
 
-## 📦 Installation & Setup
+## 📦 Installation & Deployment
 
-### Prerequisites
-* Python 3.10+
-* Node.js v18+
-* **Tesseract-OCR Engine** installed on your system ([Download here](https://github.com/UB-Mannheim/tesseract/wiki)).
-* A **Firebase Project** with Firestore and Authentication enabled.
-
-### 1. Backend Setup
-1. Navigate to the `backend` directory and create a virtual environment:
+### Local Setup
+1. **Prerequisites**: Python 3.10+, Node.js 18+, Tesseract-OCR.
+2. **Backend**: 
    ```bash
    cd backend
-   python -m venv .venv
-   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-   ```
-2. Install dependencies:
-   ```bash
    pip install -r requirements.txt
+   uvicorn app.main:app --reload
    ```
-3. Configure your `.env` and `firebase-adminsdk.json` with your Firebase credentials.
-
-### 2. Frontend Setup
-1. Navigate to the `frontend` directory:
+3. **Frontend**:
    ```bash
    cd frontend
    npm install
    npm run dev
    ```
 
----
-
-## 📅 Project Development Timeline
-
-* **Phase 1: Foundation & AI Extraction (Legacy)**
-  * Initial build with React, Vite, and FastAPI.
-  * Integration with Gemini Pro for multi-modal extraction.
-* **Phase 2: Analytics & Tracking Enhancements**
-  * Advanced resume matching and compatibility scoring.
-  * Professional styled Excel export functionality.
-* **Phase 3: Cloud Migration & Security**
-  * Migration to **Firebase Cloud Firestore** and **Firebase Authentication**.
-  * Transition to **Local AI Extraction** (Tesseract) for privacy and offline capability.
-* **Phase 4: Polish & User Flow (Recent)**
-  * Authentication UI/UX refinements (glassmorphism login).
-  * Enhanced navigation (Auth "Back" button).
-  * Optimized dashboard with modal-driven job analysis.
-  * "Zen Pearl" light mode optimization.
+### 🚀 Deployment (One-Click Blueprint)
+This project is pre-configured for **Render** using the `render.yaml` blueprint.
+1. Push your code to GitHub.
+2. Go to Render Dashboard -> **New Blueprint**.
+3. Connect your repo and follow the prompts for your Firebase credentials.
 
 ---
 

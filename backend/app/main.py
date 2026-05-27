@@ -33,6 +33,11 @@ from openpyxl.formatting.rule import CellIsRule
 
 from . import database, extraction, models
 
+def get_gemini_key():
+    """Retrieves the Gemini API key from environment variables."""
+    return os.getenv("GEMINI_API_KEY")
+
+
 # 0. In-Process TTL Cache
 class SimpleCache:
     """Thread-safe in-memory TTL cache."""
@@ -670,7 +675,11 @@ def analyze_job_match(
     """
     api_key = get_gemini_key()
     if not api_key:
-        raise HTTPException(status_code=500, detail="Gemini API Key missing on server.")
+        raise HTTPException(
+            status_code=status.HTTP_501_NOT_IMPLEMENTED, 
+            detail="Gemini match analysis is disabled (GEMINI_API_KEY not set). Using local matching instead."
+        )
+
 
     # 1. Fetch Job
     job = database.get_job_by_id(job_id, user_id)

@@ -35,9 +35,11 @@ import {
   User
 } from 'lucide-react';
 
-const BACKEND_URL = 'http://127.0.0.1:8000';
+// Backend URL logic: uses production URL if available, otherwise defaults to local
+const DEFAULT_BACKEND_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
 
 const getStatusColors = (status) => {
+
   switch (status) {
     case 'Selected': return { bg: 'rgba(16, 185, 129, 0.15)', text: '#34d399' }; // Green
     case 'Rejected': return { bg: 'rgba(239, 68, 68, 0.15)', text: '#f87171' }; // Red
@@ -173,8 +175,9 @@ function App() {
     if (window.location.origin.startsWith('capacitor://') || window.location.origin.startsWith('http://localhost:80')) {
       return 'http://10.0.2.2:8000';
     }
-    return 'http://127.0.0.1:8000';
+    return DEFAULT_BACKEND_URL;
   });
+
   const BACKEND_URL = backendUrl;
   const [jobs, setJobs] = useState([]);
   const [loadingJobs, setLoadingJobs] = useState(true);
