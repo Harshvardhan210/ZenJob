@@ -25,7 +25,8 @@ services:
       sizeGB: 1
 
   # Frontend React Service (ZenJob UI)
-  - type: static
+  - type: web
+
     name: zenjob-frontend
     env: static
     buildCommand: cd frontend && npm install && npm run build
