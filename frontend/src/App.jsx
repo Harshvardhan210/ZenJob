@@ -2380,7 +2380,7 @@ function App() {
             <div style={{ display: 'flex', gap: '1.5rem', fontSize: '0.75rem' }}>
               <a href="https://x.com/harshvardhant42" target="_blank" rel="noreferrer" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Twitter</a>
               <a href="https://www.linkedin.com/in/harsh-vardhantiwari/" target="_blank" rel="noreferrer" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>LinkedIn</a>
-              <a href="https://github.com/Harshvardhan210/MagicCounter" target="_blank" rel="noreferrer" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>GitHub</a>
+              <a href="https://github.com/Harshvardhan210/ZenJob" target="_blank" rel="noreferrer" style={{ color: 'inherit', textDecoration: 'none' }}>GitHub</a>
               <span style={{ opacity: 0.3 }}>|</span>
               {['privacy', 'terms', 'support'].map(key => (
                 <button key={key} onClick={() => setFooterModal(key)}
