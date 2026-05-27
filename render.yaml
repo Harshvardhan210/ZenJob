@@ -19,10 +19,8 @@ services:
       - key: PORT
         value: 8000
 
-    disk:
-      name: jobs-data-disk
-      mountPath: /app/backend/uploads
-      sizeGB: 1
+
+
 
   # Frontend React Service (ZenJob UI)
   - type: web
