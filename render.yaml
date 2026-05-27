@@ -1,14 +1,16 @@
 services:
   # Backend FastAPI Service (ZenJob)
   - type: web
-    name: zenjob-backend
+    name: magiccounter-backend
+
     runtime: docker
     dockerContext: backend
     dockerfilePath: backend/Dockerfile
     region: ohio
 
     plan: free
-    repo: https://github.com/Harshvardhan210/ZenJob # Make sure this matches your repo
+    repo: https://github.com/Harshvardhan210/MagicCounter # Make sure this matches your repo
+
     envVars:
       - key: FIREBASE_SERVICE_ACCOUNT_JSON
         sync: false # This will prompt for the value in Render UI
@@ -25,7 +27,8 @@ services:
   # Frontend React Service (ZenJob UI)
   - type: web
 
-    name: zenjob-frontend
+    name: magiccounter-frontend
+
     env: static
     buildCommand: cd frontend && npm install && npm run build
     staticPublishPath: frontend/dist
