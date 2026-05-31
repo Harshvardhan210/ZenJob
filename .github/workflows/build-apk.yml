@@ -53,6 +53,16 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug
 
+      - name: Create Release
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "frontend/android/app/build/outputs/apk/debug/app-debug.apk"
+          tag: "latest"
+          name: "Latest Build"
+          body: "Automatic build of the latest version."
+          allowUpdates: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:

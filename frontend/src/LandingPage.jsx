@@ -1,7 +1,7 @@
 import React from 'react';
-import { Sparkles, FileText, FileSpreadsheet, Camera, CheckCircle2, ChevronRight, Briefcase, Sun, Moon, Layers, Info } from 'lucide-react';
+import { Sparkles, FileText, FileSpreadsheet, Camera, CheckCircle2, ChevronRight, Briefcase, Sun, Moon, Layers, Info, Smartphone } from 'lucide-react';
 
-function LandingPage({ onGetStarted, theme, setTheme }) {
+function LandingPage({ onGetStarted, theme, setTheme, setFooterModal, backendUrl }) {
   return (
     <div className="app-wrapper welcome-screen" style={{ flexDirection: 'column', minHeight: '100vh', backgroundImage: 'radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.12) 0%, transparent 70%)', position: 'relative', overflowX: 'hidden', background: 'var(--body-bg)' }}>
 
@@ -41,9 +41,9 @@ function LandingPage({ onGetStarted, theme, setTheme }) {
           </div>
         </div>
 
-        <h1 className="fade-in" style={{ fontSize: 'clamp(2.5rem, 6vw, 4.5rem)', fontWeight: '800', lineHeight: '1.1', marginBottom: '1.5rem', textShadow: '0 0 40px rgba(99, 102, 241, 0.3)', letterSpacing: '-0.02em', animationDelay: '0.2s' }}>
+        <h1 className="fade-in premium-gradient-text" style={{ fontSize: 'clamp(2.5rem, 6vw, 4.5rem)', fontWeight: '800', lineHeight: '1.1', marginBottom: '1.5rem', textShadow: '0 0 40px rgba(99, 102, 241, 0.3)', letterSpacing: '-0.02em', animationDelay: '0.2s' }}>
           Supercharge Your <br />
-          <span style={{ background: 'linear-gradient(135deg, #818cf8 0%, #d8b4fe 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Career Trajectory</span>
+          Career Trajectory
         </h1>
 
         <p className="fade-in" style={{ fontSize: 'clamp(1rem, 2vw, 1.25rem)', color: 'var(--text-secondary)', maxWidth: '700px', marginBottom: '3rem', lineHeight: '1.6', animationDelay: '0.3s' }}>
@@ -58,12 +58,21 @@ function LandingPage({ onGetStarted, theme, setTheme }) {
           >
             Initiate Uplink <ChevronRight size={20} />
           </button>
+          <a
+            href={`${backendUrl}/api/download-apk`}
+            target="_blank"
+            rel="noreferrer"
+            className="btn btn-secondary"
+            style={{ padding: '1rem 2rem', fontSize: '1.1rem', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none' }}
+          >
+            <Smartphone size={20} /> Download APK
+          </a>
         </div>
 
         {/* Feature Highlights Grid */}
         <div className="fade-in" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', marginTop: '6rem', width: '100%', animationDelay: '0.6s' }}>
 
-          <div className="glass-panel" style={{ padding: '2rem', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'flex-start' }}>
+          <div className="glass-panel hover-lift" style={{ padding: '2rem', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'flex-start' }}>
             <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(99, 102, 241, 0.15)', color: '#818cf8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Camera size={24} />
             </div>
@@ -73,7 +82,7 @@ function LandingPage({ onGetStarted, theme, setTheme }) {
             </p>
           </div>
 
-          <div className="glass-panel" style={{ padding: '2rem', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'flex-start' }}>
+          <div className="glass-panel hover-lift" style={{ padding: '2rem', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'flex-start' }}>
             <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Layers size={24} />
             </div>
@@ -83,7 +92,7 @@ function LandingPage({ onGetStarted, theme, setTheme }) {
             </p>
           </div>
 
-          <div className="glass-panel" style={{ padding: '2rem', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'flex-start' }}>
+          <div className="glass-panel hover-lift" style={{ padding: '2rem', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'flex-start' }}>
             <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(217, 70, 239, 0.15)', color: '#e879f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <FileSpreadsheet size={24} />
             </div>
@@ -165,18 +174,10 @@ function LandingPage({ onGetStarted, theme, setTheme }) {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <h4 style={{ fontSize: '0.9rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-primary)' }}>Product</h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-              <span>AI Extractor</span>
-              <span>Resume Matcher</span>
-              <span>Dashboard</span>
-            </div>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <h4 style={{ fontSize: '0.9rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-primary)' }}>Resources</h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-              <span>Help Center</span>
-              <span>Privacy Policy</span>
-              <span>Terms of Service</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+              <span style={{ cursor: 'pointer', transition: 'color 0.2s' }} onClick={onGetStarted} onMouseEnter={e => e.target.style.color = '#818cf8'} onMouseLeave={e => e.target.style.color = 'var(--text-secondary)'}>AI Extractor</span>
+              <span style={{ cursor: 'pointer', transition: 'color 0.2s' }} onClick={onGetStarted} onMouseEnter={e => e.target.style.color = '#818cf8'} onMouseLeave={e => e.target.style.color = 'var(--text-secondary)'}>Resume Matcher</span>
+              <span style={{ cursor: 'pointer', transition: 'color 0.2s' }} onClick={onGetStarted} onMouseEnter={e => e.target.style.color = '#818cf8'} onMouseLeave={e => e.target.style.color = 'var(--text-secondary)'}>Dashboard</span>
             </div>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -196,8 +197,9 @@ function LandingPage({ onGetStarted, theme, setTheme }) {
       </footer>
 
       {/* Decorative Background Elements */}
-      <div style={{ position: 'absolute', top: '10%', right: '-10%', width: '600px', height: '600px', background: 'radial-gradient(circle, rgba(139, 92, 246, 0.05) 0%, transparent 60%)', filter: 'blur(60px)', zIndex: 0, pointerEvents: 'none' }}></div>
-      <div style={{ position: 'absolute', bottom: '-10%', left: '-5%', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(59, 130, 246, 0.05) 0%, transparent 60%)', filter: 'blur(60px)', zIndex: 0, pointerEvents: 'none' }}></div>
+      <div className="animate-float" style={{ position: 'absolute', top: '10%', right: '-10%', width: '600px', height: '600px', background: 'radial-gradient(circle, rgba(139, 92, 246, 0.05) 0%, transparent 60%)', filter: 'blur(60px)', zIndex: 0, pointerEvents: 'none' }}></div>
+      <div className="animate-float-slow" style={{ position: 'absolute', bottom: '-10%', left: '-5%', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(59, 130, 246, 0.05) 0%, transparent 60%)', filter: 'blur(60px)', zIndex: 0, pointerEvents: 'none' }}></div>
+      <div className="animate-morph" style={{ position: 'absolute', top: '40%', right: '15%', width: '300px', height: '300px', background: 'rgba(99, 102, 241, 0.03)', filter: 'blur(40px)', zIndex: 0, pointerEvents: 'none' }}></div>
     </div>
   );
 }

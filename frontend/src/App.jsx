@@ -870,7 +870,15 @@ function App() {
   }
   if (!user || isRegistering) {
     if (showLanding) {
-      return <LandingPage onGetStarted={() => setShowLanding(false)} theme={theme} setTheme={setTheme} />;
+      return (
+        <LandingPage
+          onGetStarted={() => setShowLanding(false)}
+          theme={theme}
+          setTheme={setTheme}
+          setFooterModal={setFooterModal}
+          backendUrl={BACKEND_URL}
+        />
+      );
     }
     return <AuthScreen setIsRegistering={setIsRegistering} onBack={() => setShowLanding(true)} />;
   }

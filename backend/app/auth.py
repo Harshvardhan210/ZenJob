@@ -17,15 +17,15 @@ try:
         cred_dict = json.loads(os.getenv("FIREBASE_SERVICE_ACCOUNT_JSON"))
         cred = credentials.Certificate(cred_dict)
         firebase_admin.initialize_app(cred)
-        logger.info("Firebase Admin initialized via environment variable.")
+        logger.info(f"Firebase Admin initialized via environment variable for project: {cred_dict.get('project_id')}")
     elif os.path.exists(cred_path):
         cred = credentials.Certificate(cred_path)
         firebase_admin.initialize_app(cred)
-        logger.info("Firebase Admin initialized via JSON file.")
+        logger.info(f"Firebase Admin initialized via JSON file at {cred_path}")
     else:
-        logger.warning(f"Firebase Admin SDK JSON not found and FIREBASE_SERVICE_ACCOUNT_JSON not set. Authentication will fail.")
+        logger.warning(f"Firebase Admin SDK JSON not found at {cred_path} and FIREBASE_SERVICE_ACCOUNT_JSON not set. Authentication will fail.")
 except Exception as e:
-    logger.warning(f"Failed to initialize Firebase Admin: {str(e)}")
+    logger.error(f"Failed to initialize Firebase Admin: {str(e)}", exc_info=True)
 
 
 async def get_current_user(request: Request) -> str:
@@ -44,7 +44,7 @@ async def get_current_user(request: Request) -> str:
         uid = decoded_token["uid"]
         return uid
     except Exception as e:
-        logger.error(f"Token verification failed: {str(e)}")
+        logger.error(f"Token verification failed for token beginning with '{token[:10]}...': {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication credentials",
