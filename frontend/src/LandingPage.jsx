@@ -1,4 +1,5 @@
 import React from 'react';
+import { Capacitor } from '@capacitor/core';
 import { Sparkles, FileText, FileSpreadsheet, Camera, CheckCircle2, ChevronRight, Briefcase, Sun, Moon, Layers, Info, Smartphone } from 'lucide-react';
 
 function LandingPage({ onGetStarted, theme, setTheme, setFooterModal, backendUrl }) {
@@ -58,15 +59,17 @@ function LandingPage({ onGetStarted, theme, setTheme, setFooterModal, backendUrl
           >
             Initiate Uplink <ChevronRight size={20} />
           </button>
-          <a
-            href={`${backendUrl}/api/download-apk`}
-            target="_blank"
-            rel="noreferrer"
-            className="btn btn-secondary"
-            style={{ padding: '1rem 2rem', fontSize: '1.1rem', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none' }}
-          >
-            <Smartphone size={20} /> Download APK
-          </a>
+          {!Capacitor.isNativePlatform() && (
+            <a
+              href={`${backendUrl}/api/download-apk`}
+              target="_blank"
+              rel="noreferrer"
+              className="btn btn-secondary"
+              style={{ padding: '1rem 2rem', fontSize: '1.1rem', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none' }}
+            >
+              <Smartphone size={20} /> Download APK
+            </a>
+          )}
         </div>
 
         {/* Feature Highlights Grid */}
