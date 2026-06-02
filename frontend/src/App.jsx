@@ -1127,9 +1127,9 @@ function App() {
             <div className="modal-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                 <div style={{ color: '#818cf8' }}>
-                  {footerModal === 'privacy' ? <Eye size={22} /> : footerModal === 'terms' ? <FileText size={22} /> : <Mail size={22} />}
+                  {footerModal === 'privacy' ? <Eye size={22} /> : <FileText size={22} />}
                 </div>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 700, textTransform: 'capitalize' }}>{footerModal} {footerModal !== 'support' ? 'Policy' : ''}</h3>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 700, textTransform: 'capitalize' }}>{footerModal} Policy</h3>
               </div>
               <button className="btn-close" onClick={() => setFooterModal(null)}><X size={20} /></button>
             </div>
@@ -1166,37 +1166,6 @@ function App() {
                     <h4 style={{ color: 'var(--text-primary)', marginBottom: '0.35rem' }}>3. Data Integrity</h4>
                     <p>Users are responsible for the legality of the job advertisements they track. ZenJob provides the infrastructure; you provide the pursuit.</p>
                   </section>
-                </div>
-              )}
-              {footerModal === 'support' && (
-                <div style={{ textAlign: 'center', padding: '1rem 0' }}>
-                  <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'rgba(99, 102, 241, 0.1)', color: '#818cf8', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>
-                    <Phone size={28} />
-                  </div>
-                  <h4 style={{ color: 'var(--text-primary)', marginBottom: '1rem' }}>Need Technical Assistance?</h4>
-                  <div style={{ display: 'grid', gap: '1rem', textAlign: 'left' }}>
-                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', background: 'rgba(255,255,255,0.05)', padding: '1rem', borderRadius: '12px' }}>
-                      <Mail size={18} style={{ color: '#818cf8' }} />
-                      <div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Email Support</div>
-                        <div style={{ fontWeight: 600 }}>support@zenjob.ai</div>
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', background: 'rgba(255,255,255,0.05)', padding: '1rem', borderRadius: '12px' }}>
-                      <Globe size={18} style={{ color: '#818cf8' }} />
-                      <div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Help Center</div>
-                        <div style={{ fontWeight: 600 }}>docs.zenjob.ai</div>
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', background: 'rgba(255,255,255,0.05)', padding: '1rem', borderRadius: '12px' }}>
-                      <Layers size={18} style={{ color: '#8b5cf6' }} />
-                      <div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Community</div>
-                        <div style={{ fontWeight: 600 }}>Discord High-Performers</div>
-                      </div>
-                    </div>
-                  </div>
                 </div>
               )}
             </div>
@@ -2391,7 +2360,7 @@ function App() {
               <a href="https://github.com/Harshvardhan210/MagicCounter" target="_blank" rel="noreferrer" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>GitHub</a>
 
               <span style={{ opacity: 0.3 }}>|</span>
-              {['privacy', 'terms', 'support'].map(key => (
+              {['privacy', 'terms'].map(key => (
                 <button key={key} onClick={() => setFooterModal(key)}
                   style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '0.75rem', padding: 0, textTransform: 'capitalize', transition: 'color 0.2s' }}
                   onMouseEnter={e => e.target.style.color = '#a5b4fc'}
