@@ -646,7 +646,7 @@ def export_jobs_excel(user_id: str = Depends(get_current_user)):
         # Return file as a streaming download response
         output.seek(0)
         
-        filename = f"JobCollector_Export_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
+        filename = f"ZenJob_Export_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"
         headers = {
             "Content-Disposition": f'attachment; filename="{filename}"',
             "Access-Control-Expose-Headers": "Content-Disposition"
@@ -951,7 +951,7 @@ def download_apk():
         response.raise_for_status()
         
         headers = {
-            "Content-Disposition": "attachment; filename=JobCollector.apk",
+            "Content-Disposition": "attachment; filename=ZenJob.apk",
             "Content-Type": "application/vnd.android.package-archive"
         }
         

@@ -893,7 +893,7 @@ function App() {
                 <Briefcase size={40} style={{ color: '#a78bfa' }} />
               </div>
             </div>
-            <h1 style={{ fontSize: '2.5rem', fontWeight: '800', background: 'linear-gradient(to right, #818cf8, #c084fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '1rem', letterSpacing: '-0.02em' }}>JobCollector</h1>
+            <h1 style={{ fontSize: '2.5rem', fontWeight: '800', background: 'linear-gradient(to right, #818cf8, #c084fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '1rem', letterSpacing: '-0.02em' }}>ZenJob</h1>
             <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem', marginBottom: '2.5rem', lineHeight: '1.6' }}>
               Your cyber-luxe portal for AI-powered job application tracking, resume matching, and automated insight extraction.
             </p>
@@ -2090,7 +2090,7 @@ function App() {
                 <Briefcase size={32} />
               </div>
               <h1 style={{ fontSize: '2.5rem', fontWeight: '800', background: 'linear-gradient(to right, #818cf8, #c084fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '0.5rem' }}>
-                JobCollector
+                ZenJob
               </h1>
               <p style={{ fontSize: '1.1rem', color: 'var(--text-secondary)' }}>Your Cyber-Luxe Career Navigator</p>
             </div>

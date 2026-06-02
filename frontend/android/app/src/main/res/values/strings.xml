@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">JobCollector</string>
-    <string name="title_activity_main">JobCollector</string>
+    <string name="app_name">ZenJob</string>
+    <string name="title_activity_main">ZenJob</string>
     <string name="package_name">com.ideaforge.jobcollector</string>
     <string name="custom_url_scheme">com.ideaforge.jobcollector</string>
 </resources>
