@@ -172,6 +172,12 @@ function App() {
   const [backendUrl, setBackendUrl] = useState(() => {
     const saved = localStorage.getItem('backend_url');
     if (saved && saved !== 'undefined' && saved !== 'null') return saved;
+
+    // If we have a baked-in URL from .env that isn't just localhost, use it!
+    if (DEFAULT_BACKEND_URL && !DEFAULT_BACKEND_URL.includes('127.0.0.1') && !DEFAULT_BACKEND_URL.includes('localhost')) {
+      return DEFAULT_BACKEND_URL;
+    }
+
     const origin = window.location.origin;
     if (origin.startsWith('capacitor://') || origin.includes('localhost') || origin.startsWith('file://')) {
       // 10.0.2.2 is the general gateway for Android emulators to reach host localhost
