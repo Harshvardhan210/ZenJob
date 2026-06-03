@@ -172,7 +172,9 @@ function App() {
   const [backendUrl, setBackendUrl] = useState(() => {
     const saved = localStorage.getItem('backend_url');
     if (saved && saved !== 'undefined' && saved !== 'null') return saved;
-    if (window.location.origin.startsWith('capacitor://') || window.location.origin.startsWith('http://localhost:80')) {
+    const origin = window.location.origin;
+    if (origin.startsWith('capacitor://') || origin.includes('localhost') || origin.startsWith('file://')) {
+      // 10.0.2.2 is the general gateway for Android emulators to reach host localhost
       return 'http://10.0.2.2:8000';
     }
     return DEFAULT_BACKEND_URL;
@@ -1405,14 +1407,17 @@ function App() {
                 <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: '8px', padding: '1rem', color: '#fca5a5', fontSize: '0.9rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                   <strong>Extraction Error:</strong>
                   <div>{uploadError}</div>
-                  <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
-                    <button className="btn btn-secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }} onClick={inputType === 'image' ? handleExtract : inputType === 'text' ? handleExtractText : handleExtractUrl}>
-                      Retry Parsing
+                  <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
+                    <button className="btn btn-secondary" style={{ padding: '0.6rem 1rem', fontSize: '0.85rem', flex: 1 }} onClick={inputType === 'image' ? handleExtract : inputType === 'text' ? handleExtractText : handleExtractUrl}>
+                      <RefreshCw size={14} /> Retry Parsing
                     </button>
-                    <button className="btn btn-primary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)' }} onClick={handleUpdateBackendUrl}>
-                      Update URL
+                    <button className="btn btn-primary" style={{ padding: '0.6rem 1rem', fontSize: '0.85rem', flex: 1, boxShadow: '0 0 15px rgba(99, 102, 241, 0.4)', border: '1px solid rgba(255,255,255,0.3)' }} onClick={handleUpdateBackendUrl}>
+                      <Globe size={14} /> Update Backend URL
                     </button>
                   </div>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0.5rem 0 0 0', fontStyle: 'italic' }}>
+                    Tip: For physical mobile devices, use your computer's local network IP (e.g. 192.168.1.XX) instead of 127.0.0.1.
+                  </p>
                 </div>
               )}
             </div>
