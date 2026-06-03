@@ -345,7 +345,7 @@ def extract_job_url(
         # Collapse whitespace
         lines = (line.strip() for line in text.splitlines())
         chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
-        clean_text = '\\n'.join(chunk for chunk in chunks if chunk)
+        clean_text = '\n'.join(chunk for chunk in chunks if chunk)
         
         if len(clean_text) < 50:
             raise ValueError("Could not extract enough meaningful text from this URL. It might be heavily javascript-rendered.")

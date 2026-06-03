@@ -365,7 +365,11 @@ function App() {
     } catch (error) {
       console.error(error);
       setUploadStatus('error');
-      setUploadError(error.message || "An unexpected error occurred during OCR extraction.");
+      let msg = error.message || "An unexpected error occurred during OCR extraction.";
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        msg = `Backend unreachable at ${BACKEND_URL}. Check your Uplink Configuration in Settings.`;
+      }
+      setUploadError(msg);
     }
   };
   const handleExtractText = async () => {
@@ -407,7 +411,11 @@ function App() {
     } catch (error) {
       console.error(error);
       setUploadStatus('error');
-      setUploadError(error.message || "An unexpected error occurred during text extraction.");
+      let msg = error.message || "An unexpected error occurred during text extraction.";
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        msg = `Backend unreachable at ${BACKEND_URL}. Check your Uplink Configuration in Settings.`;
+      }
+      setUploadError(msg);
     }
   };
   const handleExtractUrl = async () => {
@@ -449,7 +457,11 @@ function App() {
     } catch (error) {
       console.error(error);
       setUploadStatus('error');
-      setUploadError(error.message || "An unexpected error occurred during URL extraction.");
+      let msg = error.message || "An unexpected error occurred during URL extraction.";
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        msg = `Backend unreachable at ${BACKEND_URL}. Check your Uplink Configuration in Settings.`;
+      }
+      setUploadError(msg);
     }
   };
   const handleSaveJob = async (e) => {
@@ -1218,6 +1230,10 @@ function App() {
           <div className={`nav-item ${activeSection === 'about' ? 'active' : ''}`} onClick={() => setActiveSection('about')}>
             <Info className="icon" size={20} />
             <span>About</span>
+          </div>
+          <div className={`nav-item ${activeSection === 'settings' ? 'active' : ''}`} onClick={() => setActiveSection('settings')}>
+            <Settings className="icon" size={20} />
+            <span>Settings</span>
           </div>
           <div style={{ flex: 1 }}></div>
           <div className="nav-item logout-item" onClick={() => { setShowLanding(true); signOut(auth); }}>
@@ -2337,6 +2353,110 @@ function App() {
           </section>
         )
         }
+        {activeSection === 'settings' && (
+          <section className="fade-in" style={{ maxWidth: '800px', margin: '0 auto', width: '100%', minHeight: '600px' }}>
+            <div className="glass-panel" style={{ padding: '2.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2.5rem', borderBottom: '1px solid var(--border-glass)', paddingBottom: '1.25rem' }}>
+                <div className="icon-box" style={{ width: '56px', height: '56px', borderRadius: '16px', background: 'rgba(139, 92, 246, 0.1)', color: '#8b5cf6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Settings size={28} />
+                </div>
+                <div>
+                  <h2 style={{ margin: 0, fontSize: '1.75rem', fontWeight: 800, background: 'var(--primary-gradient)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>System Configuration</h2>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0 }}>Manage your application environment and connectivity</p>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
+                <div className="settings-group">
+                  <h3 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '0.5rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <Globe size={18} style={{ color: '#6366f1' }} />
+                    <span>Uplink Configuration</span>
+                  </h3>
+                  <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '1.5rem', lineHeight: '1.6' }}>
+                    Configure the primary API gateway for AI extraction. This setting is crucial for maintaining synchronization between your mobile devices and the processing engine.
+                  </p>
+
+                  <div className="form-group" style={{ background: 'rgba(0,0,0,0.15)', padding: '1.5rem', borderRadius: '16px', border: '1px solid var(--border-glass)' }}>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.05em' }}>Gateway Endpoint URL</label>
+                    <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.75rem' }}>
+                      <input
+                        type="text"
+                        className="form-control"
+                        placeholder="http://127.0.0.1:8000"
+                        value={backendUrl}
+                        onChange={(e) => setBackendUrl(e.target.value)}
+                        style={{ flexGrow: 1, height: '3.2rem', fontSize: '1rem', background: 'var(--bg-input)' }}
+                      />
+                      <button
+                        className="btn btn-primary"
+                        style={{ height: '3.2rem', padding: '0 1.5rem' }}
+                        onClick={() => {
+                          localStorage.setItem('backend_url', backendUrl);
+                          showToast("Gateway configuration synchronized.", "info");
+                          setTimeout(() => window.location.reload(), 1000);
+                        }}
+                      >
+                        <Check size={18} />
+                        <span>Synchronize</span>
+                      </button>
+                    </div>
+
+                    <div style={{ marginTop: '1.25rem', display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+                      <button
+                        className="btn btn-secondary"
+                        style={{ fontSize: '0.8rem', padding: '0.6rem 1rem', background: 'rgba(255,255,255,0.03)' }}
+                        onClick={() => {
+                          const emuIp = "http://10.0.2.2:8000";
+                          setBackendUrl(emuIp);
+                          localStorage.setItem('backend_url', emuIp);
+                          showToast("Switching to Android Emulator Uplink", "warning");
+                        }}
+                      >
+                        <RefreshCw size={14} />
+                        Emulator Preset
+                      </button>
+                      <button
+                        className="btn btn-secondary"
+                        style={{ fontSize: '0.8rem', padding: '0.6rem 1rem', background: 'rgba(255,255,255,0.03)' }}
+                        onClick={() => {
+                          localStorage.removeItem('backend_url');
+                          setBackendUrl(DEFAULT_BACKEND_URL);
+                          showToast("Resetting to Local Host configuration", "info");
+                        }}
+                      >
+                        <Trash2 size={14} />
+                        Reset to Default
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="settings-group" style={{ borderTop: '1px solid var(--border-glass)', paddingTop: '2.5rem' }}>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '1rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <Info size={18} style={{ color: '#8b5cf6' }} />
+                    <span>Connectivity Diagnostic Reference</span>
+                  </h3>
+                  <div style={{ background: 'var(--bg-input)', padding: '1.5rem', borderRadius: '16px', border: '1px solid var(--border-glass)', fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.7 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
+                      <div>
+                        <div style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.25rem' }}>Desktop Environment</div>
+                        <code style={{ background: 'rgba(0,0,0,0.3)', padding: '0.2rem 0.4rem', borderRadius: '4px', fontSize: '0.8rem' }}>http://127.0.0.1:8000</code>
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.25rem' }}>Android Emulator</div>
+                        <code style={{ background: 'rgba(0,0,0,0.3)', padding: '0.2rem 0.4rem', borderRadius: '4px', fontSize: '0.8rem' }}>http://10.0.2.2:8000</code>
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.25rem' }}>Physical APK Uplink</div>
+                        <p style={{ fontSize: '0.8rem', margin: 0 }}>Use Local Network IP (e.g., 192.168.x.x)</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
         <footer style={{ padding: '3rem 2rem', borderTop: '1px solid var(--border-glass)', marginTop: '4rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
           <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '2rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>

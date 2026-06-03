@@ -21,6 +21,9 @@ def parse_job_text(text: str) -> JobExtraction:
     """
     Uses regex and rule-based logic to extract job details from raw text.
     """
+    # Normalize line endings
+    text = text.replace('\r\n', '\n').replace('\r', '\n')
+    
     details = {
         "company_name": None,
         "job_role": None,
