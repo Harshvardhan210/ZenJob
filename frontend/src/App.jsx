@@ -172,17 +172,6 @@ function App() {
   const [backendUrl, setBackendUrl] = useState(() => {
     const saved = localStorage.getItem('backend_url');
     if (saved && saved !== 'undefined' && saved !== 'null') return saved;
-
-    // If we have a baked-in URL from .env that isn't just localhost, use it!
-    if (DEFAULT_BACKEND_URL && !DEFAULT_BACKEND_URL.includes('127.0.0.1') && !DEFAULT_BACKEND_URL.includes('localhost')) {
-      return DEFAULT_BACKEND_URL;
-    }
-
-    const origin = window.location.origin;
-    if (origin.startsWith('capacitor://') || origin.includes('localhost') || origin.startsWith('file://')) {
-      // 10.0.2.2 is the general gateway for Android emulators to reach host localhost
-      return 'http://10.0.2.2:8000';
-    }
     return DEFAULT_BACKEND_URL;
   });
 
@@ -375,7 +364,7 @@ function App() {
       setUploadStatus('error');
       let msg = error.message || "An unexpected error occurred during OCR extraction.";
       if (error instanceof TypeError && error.message.includes('fetch')) {
-        msg = `Backend unreachable at ${BACKEND_URL}. If you are on mobile, ensure your computer's local IP is configured correctly.`;
+        msg = `Backend unreachable at ${BACKEND_URL}. Please ensure the server is running.`;
       }
       setUploadError(msg);
     }
@@ -421,7 +410,7 @@ function App() {
       setUploadStatus('error');
       let msg = error.message || "An unexpected error occurred during text extraction.";
       if (error instanceof TypeError && error.message.includes('fetch')) {
-        msg = `Backend unreachable at ${BACKEND_URL}. If you are on mobile, ensure your computer's local IP is configured correctly.`;
+        msg = `Backend unreachable at ${BACKEND_URL}. Please ensure the server is running.`;
       }
       setUploadError(msg);
     }
@@ -467,7 +456,7 @@ function App() {
       setUploadStatus('error');
       let msg = error.message || "An unexpected error occurred during URL extraction.";
       if (error instanceof TypeError && error.message.includes('fetch')) {
-        msg = `Backend unreachable at ${BACKEND_URL}. If you are on mobile, ensure your computer's local IP is configured correctly.`;
+        msg = `Backend unreachable at ${BACKEND_URL}. Please ensure the server is running.`;
       }
       setUploadError(msg);
     }
@@ -1422,7 +1411,7 @@ function App() {
                     </button>
                   </div>
                   <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0.5rem 0 0 0', fontStyle: 'italic' }}>
-                    Tip: For physical mobile devices, use your computer's local network IP (e.g. 192.168.1.XX) instead of 127.0.0.1.
+                    Tip: Please ensure the backend server is running and accessible at the configured URL.
                   </p>
                 </div>
               )}

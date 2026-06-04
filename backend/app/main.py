@@ -941,28 +941,5 @@ def validate_gemini_key():
             detail=f"Server API Key error or connection error: {str(e)}"
         )
 
-@app.get("/api/download-apk")
-def download_apk():
-    """Proxies the latest APK download from GitHub to avoid redirects."""
-    url = "https://github.com/Harshvardhan210/MagicCounter/releases/latest/download/app-debug.apk"
-    try:
-        # Use streaming to avoid loading the whole APK into memory
-        response = requests.get(url, stream=True, timeout=30)
-        response.raise_for_status()
-        
-        headers = {
-            "Content-Disposition": "attachment; filename=ZenJob.apk",
-            "Content-Type": "application/vnd.android.package-archive"
-        }
-        
-        return StreamingResponse(
-            response.iter_content(chunk_size=1024 * 50), # 50KB chunks
-            media_type="application/vnd.android.package-archive",
-            headers=headers
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to fetch APK from GitHub: {str(e)}"
-        )
+
 

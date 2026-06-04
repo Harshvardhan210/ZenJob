@@ -4,7 +4,6 @@
 [![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://react.dev/)
 [![Firebase](https://img.shields.io/badge/Firebase-FFCA28?style=for-the-badge&logo=firebase&logoColor=white)](https://firebase.google.com/)
 [![Tesseract OCR](https://img.shields.io/badge/Tesseract--OCR-blue?style=for-the-badge&logo=google-cloud&logoColor=white)](https://github.com/tesseract-ocr/tesseract)
-[![Capacitor](https://img.shields.io/badge/Capacitor-119EFF?style=for-the-badge&logo=capacitor&logoColor=white)](https://capacitorjs.com/)
 [![Vite](https://img.shields.io/badge/Vite-B73BFE?style=for-the-badge&logo=vite&logoColor=FFD627)](https://vitejs.dev/)
 
 > **ZenJob** is a premium, full-stack, AI-powered application designed to streamline and supercharge your job hunting journey. By leveraging **Local OCR (Tesseract)** and **TF-IDF NLP Matching**, ZenJob turns messy job screenshots, raw descriptions, and URLs into clean, structured data locally and securely. Furthermore, it automatically evaluates your active resume against job listings to provide instant compatibility scoring, custom skill gap analyses, and dynamic improvement tips.
@@ -36,13 +35,10 @@
 
 ---
 
-## 🛠️ Tech Stack & Architecture
-
 ```mermaid
 graph TD
     A[React Vite Frontend] -->|Auth / Firestore| B[Firebase]
     A -->|API Requests| C[FastAPI Backend]
-    A -->|Capacitor Wrapper| Mob[Android App]
     C -->|Local OCR| D[Tesseract Engine]
     C -->|NLP Matching| E[scikit-learn TF-IDF]
     C -->|Styled Reports| F[Pandas & OpenPyXL]
