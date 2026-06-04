@@ -118,10 +118,10 @@ function AuthScreen({ setIsRegistering, onBack }) {
             </button>
           )}
           <h1 style={{ fontSize: '2rem', fontWeight: '800', background: 'linear-gradient(to right, #818cf8, #c084fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: '0.5rem', letterSpacing: '-0.02em' }}>
-            {isLogin ? 'Welcome Back' : 'Initialize Account'}
+            {isLogin ? 'Welcome Back' : 'Create Account'}
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '1rem', marginBottom: '2rem', lineHeight: '1.6' }}>
-            {isLogin ? 'Authenticate to access your ZenJob portal.' : 'Create a secure Firebase instance for your data.'}
+            {isLogin ? 'Sign in to access your ZenJob dashboard.' : 'Create a free account to start tracking your applications.'}
           </p>
 
           <form onSubmit={handleAuth} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', textAlign: 'left', marginBottom: '2rem' }}>
@@ -143,12 +143,12 @@ function AuthScreen({ setIsRegistering, onBack }) {
             )}
 
             <div className="form-group" style={{ marginBottom: 0 }}>
-              <label>Email Access</label>
+              <label>Email</label>
               <div className="input-group">
                 <div className="input-icon"><Mail size={18} /></div>
                 <input
                   type="email"
-                  placeholder="commander@protocol.net"
+                  placeholder="you@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
@@ -157,7 +157,7 @@ function AuthScreen({ setIsRegistering, onBack }) {
             </div>
 
             <div className="form-group" style={{ marginBottom: 0 }}>
-              <label>Secure Passphrase</label>
+              <label>Password</label>
               <div className="input-group">
                 <div className="input-icon"><Lock size={18} /></div>
                 <input
@@ -180,15 +180,15 @@ function AuthScreen({ setIsRegistering, onBack }) {
               {loading ? (
                 <span className="spin" style={{ display: 'inline-block', width: '20px', height: '20px', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: '#fff', borderRadius: '50%' }}></span>
               ) : isLogin ? (
-                <><LogIn size={20} /> Establish Uplink</>
+                <><LogIn size={20} /> Sign In</>
               ) : (
-                <><UserPlus size={20} /> Create Instance</>
+                <><UserPlus size={20} /> Create Account</>
               )}
             </button>
           </form>
 
           <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.1)', paddingTop: '1.5rem', color: '#94a3b8', fontSize: '0.9rem' }}>
-            {isLogin ? "Don't have an instance yet?" : "Already have an uplink?"}
+            {isLogin ? "Don't have an account yet?" : "Already have an account?"}
             <button
               type="button"
               onClick={() => setIsLogin(!isLogin)}

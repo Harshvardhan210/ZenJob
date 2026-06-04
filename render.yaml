@@ -15,7 +15,7 @@ services:
       - key: FIREBASE_SERVICE_ACCOUNT_JSON
         sync: false # This will prompt for the value in Render UI
       - key: ALLOWED_ORIGINS
-        value: "*"
+        value: "https://magiccounter-frontend.onrender.com"
       - key: GEMINI_API_KEY
         sync: false
       - key: PORT

@@ -82,14 +82,17 @@ app = FastAPI(
 # 2. Configure CORS
 allowed_origins_env = os.getenv("ALLOWED_ORIGINS")
 if allowed_origins_env:
-    origins = [o.strip() for o in allowed_origins_env.split(",") if o.strip()]
+    # Allow '*' only if explicitly set to it; otherwise split into a list
+    if allowed_origins_env.strip() == "*":
+        origins = ["*"]
+    else:
+        origins = [o.strip() for o in allowed_origins_env.split(",") if o.strip()]
 else:
     origins = [
         "http://localhost:5173",
         "http://localhost:5000",
         "http://localhost:3000",
         "http://localhost:8000",
-        "capacitor://localhost",
         "http://localhost",
     ]
 
