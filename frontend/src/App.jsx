@@ -35,21 +35,13 @@ import {
   User
 } from 'lucide-react';
 
-// Backend URL logic:
-// 1. If VITE_API_BASE_URL is set at build time, ALWAYS use it (ignores localStorage).
-// 2. Otherwise, fall back to a manually saved localStorage URL (for mobile/LAN overrides).
-// 3. If neither is set, default to localhost.
-const ENV_BACKEND_URL = import.meta.env.VITE_API_BASE_URL || '';
-const DEFAULT_BACKEND_URL = ENV_BACKEND_URL || localStorage.getItem('backend_url') || 'http://127.0.0.1:8000';
+// Backend URL: determined solely by VITE_API_BASE_URL build-time env var.
+// localStorage is NOT used — no stale URLs can be cached in the browser.
+const DEFAULT_BACKEND_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
 
-// Permanently clear stale URLs from localStorage whenever the env var overrides them,
-// so old cached URLs (e.g. a deleted Render service) can never come back.
-if (ENV_BACKEND_URL) {
-  const stored = localStorage.getItem('backend_url');
-  if (stored && stored !== ENV_BACKEND_URL) {
-    localStorage.removeItem('backend_url');
-  }
-}
+// Clear any previously cached backend URL from localStorage so old/deleted
+// service URLs (e.g. magiccounter-backend.onrender.com) never get used.
+localStorage.removeItem('backend_url');
 
 const getStatusColors = (status) => {
 
@@ -472,17 +464,7 @@ function App() {
   };
 
   const handleUpdateBackendUrl = () => {
-    // If env var is set, it is the authoritative URL — don't allow manual overrides.
-    if (ENV_BACKEND_URL) {
-      showToast("Backend URL is locked by the deployment configuration.", "error");
-      return;
-    }
-    const newUrl = window.prompt("Enter Backend API URL (e.g. http://192.168.1.5:8000):", BACKEND_URL);
-    if (newUrl && newUrl.trim()) {
-      setBackendUrl(newUrl.trim());
-      localStorage.setItem('backend_url', newUrl.trim());
-      showToast("Gateway configuration updated.", "success");
-    }
+    showToast("Backend URL is set by deployment configuration and cannot be changed here.", "error");
   };
   const handleSaveJob = async (e) => {
     e.preventDefault();
