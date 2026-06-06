@@ -35,8 +35,21 @@ import {
   User
 } from 'lucide-react';
 
-// Backend URL logic: uses production URL if available, otherwise defaults to local
-const DEFAULT_BACKEND_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
+// Backend URL logic:
+// 1. If VITE_API_BASE_URL is set at build time, ALWAYS use it (ignores localStorage).
+// 2. Otherwise, fall back to a manually saved localStorage URL (for mobile/LAN overrides).
+// 3. If neither is set, default to localhost.
+const ENV_BACKEND_URL = import.meta.env.VITE_API_BASE_URL || '';
+const DEFAULT_BACKEND_URL = ENV_BACKEND_URL || localStorage.getItem('backend_url') || 'http://127.0.0.1:8000';
+
+// Permanently clear stale URLs from localStorage whenever the env var overrides them,
+// so old cached URLs (e.g. a deleted Render service) can never come back.
+if (ENV_BACKEND_URL) {
+  const stored = localStorage.getItem('backend_url');
+  if (stored && stored !== ENV_BACKEND_URL) {
+    localStorage.removeItem('backend_url');
+  }
+}
 
 const getStatusColors = (status) => {
 
@@ -169,11 +182,7 @@ function App() {
   const showConfirm = (message, onConfirm) => {
     setConfirmModal({ message, onConfirm });
   };
-  const [backendUrl, setBackendUrl] = useState(() => {
-    const saved = localStorage.getItem('backend_url');
-    if (saved && saved !== 'undefined' && saved !== 'null') return saved;
-    return DEFAULT_BACKEND_URL;
-  });
+  const [backendUrl, setBackendUrl] = useState(DEFAULT_BACKEND_URL);
 
   const BACKEND_URL = backendUrl;
   const [jobs, setJobs] = useState([]);
@@ -463,6 +472,11 @@ function App() {
   };
 
   const handleUpdateBackendUrl = () => {
+    // If env var is set, it is the authoritative URL — don't allow manual overrides.
+    if (ENV_BACKEND_URL) {
+      showToast("Backend URL is locked by the deployment configuration.", "error");
+      return;
+    }
     const newUrl = window.prompt("Enter Backend API URL (e.g. http://192.168.1.5:8000):", BACKEND_URL);
     if (newUrl && newUrl.trim()) {
       setBackendUrl(newUrl.trim());
