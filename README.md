@@ -69,8 +69,6 @@ Modal-based deep analysis with glassmorphism UI — no page reloads.
 ### 📥 Styled Excel Export
 Export your entire job pipeline as a formatted Excel workbook with a **Slate Indigo** colour theme, zebra-striping, and column-level data validation.
 
-### 🔗 Direct APK Download
-A backend proxy endpoint streams the latest Android APK directly from GitHub Releases — users download from the domain without seeing GitHub.
 
 ---
 
@@ -88,7 +86,7 @@ A backend proxy endpoint streams the latest Android APK directly from GitHub Rel
 | **Exports** | Pandas + OpenPyXL |
 | **Containerisation** | Docker |
 | **Hosting** | Render (Free tier — Docker + Static) |
-| **Mobile** | Capacitor (Android APK) |
+
 
 ---
 
@@ -104,7 +102,7 @@ graph TD
     C -->|PDF Parsing| G[pdfplumber]
     C -->|Web Scraping| H[Requests & BeautifulSoup4]
     C -->|TTL Caching| I[In-Process Cache]
-    C -->|APK Proxy| J[GitHub Releases]
+
 ```
 
 ---
