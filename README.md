@@ -1,76 +1,240 @@
-# ✨ ZenJob — Premium AI Job Application Tracker & Resume Matcher
+<div align="center">
 
-[![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=FastAPI&logoColor=white)](https://fastapi.tiangolo.com/)
-[![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://react.dev/)
-[![Firebase](https://img.shields.io/badge/Firebase-FFCA28?style=for-the-badge&logo=firebase&logoColor=white)](https://firebase.google.com/)
-[![Tesseract OCR](https://img.shields.io/badge/Tesseract--OCR-blue?style=for-the-badge&logo=google-cloud&logoColor=white)](https://github.com/tesseract-ocr/tesseract)
+<img src="logo.png" alt="ZenJob Logo" width="120" />
+
+# ✨ ZenJob
+
+### AI-Powered Job Application Tracker & Resume Matcher
+
+[![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![React](https://img.shields.io/badge/React_19-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://react.dev/)
+[![Firebase](https://img.shields.io/badge/Firebase-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)](https://firebase.google.com/)
 [![Vite](https://img.shields.io/badge/Vite-B73BFE?style=for-the-badge&logo=vite&logoColor=FFD627)](https://vitejs.dev/)
+[![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
+[![Render](https://img.shields.io/badge/Render-46E3B7?style=for-the-badge&logo=render&logoColor=black)](https://render.com/)
 
-> **ZenJob** is a premium, full-stack, AI-powered application designed to streamline and supercharge your job hunting journey. By leveraging **Local OCR (Tesseract)** and **TF-IDF NLP Matching**, ZenJob turns messy job screenshots, raw descriptions, and URLs into clean, structured data locally and securely. Furthermore, it automatically evaluates your active resume against job listings to provide instant compatibility scoring, custom skill gap analyses, and dynamic improvement tips.
+**ZenJob** transforms your job hunt from chaos into clarity. Upload job posters, scrape listings, match your resume — all locally, all securely.
+
+[🌐 Live Demo](https://magiccounter-frontend.onrender.com) · [📥 Download APK](#-mobile-apk) · [🐛 Report Bug](https://github.com/Harshvardhan210/MagicCounter/issues)
+
+</div>
+
+---
+
+## 📖 Table of Contents
+
+- [About](#-about)
+- [Features](#-features)
+- [Tech Stack](#-tech-stack)
+- [Architecture](#-architecture)
+- [Getting Started](#-getting-started)
+- [Deployment](#-deployment)
+- [Mobile APK](#-mobile-apk)
+- [Environment Variables](#-environment-variables)
+- [License](#-license)
 
 ---
 
-## 🚀 Core Features
+## 🎯 About
 
-### 1. 📸 Local Multimodal Extraction
-* **Capture & Upload:** Simply upload a screenshot or image of any job poster.
-* **Tesseract OCR:** The system uses local OCR engines to extract raw text without relying on external vision APIs.
-* **Rule-Based Structuring:** Advanced regex and rule-based logic extract: *Company Name, Job Role, Location, Job Type, Contact Email, Phone Number, Skills Required, Experience Needed, and Application Link*.
+ZenJob is a **full-stack, AI-powered** job application management platform built for serious job seekers. It uses **local OCR (Tesseract)** and **TF-IDF NLP Matching** to extract structured data from job posters and URLs without sending your data to third-party AI APIs — keeping everything private and fast.
 
-### 2. 🌐 Smart Web Scraper & URL Extraction
-* **Direct URL Scraping:** Provide a job posting URL.
-* **Auto-Fetch & Structure:** The backend automatically fetches the HTML, filters out boilerplate, and extracts structured job info locally.
-
-### 3. 📄 Live Resume Matcher & Compatibility Scoring
-* **Resume Bank:** Upload and manage multiple versions of your resume (PDF, DOC, DOCX support).
-* **TF-IDF Alignment:** The system uses **TF-IDF Cosine Similarity** to automatically cross-reference your active resume with every job listing.
-* **Granular Feedback:** Get a precise match score percentage, matching skills, missing skills, and personalized career suggestions.
-
-### 4. 📊 "Cyber-Luxe" Command Dashboard
-* **Dynamic Kanban/List Tracking:** Track application status using professional categories: *Applied, Test Process, Screening, Pending Response, Selected, and Rejected*.
-* **Modal-Based Analysis:** Access deep AI match analysis and edit job details through beautiful, glassmorphism modals instead of redirects.
-
-### 5. 📥 Engineered Excel Export
-* **Styled Spreadsheets:** Download a fully formatted Excel workbook with professional **Slate Indigo theme**, custom zebra-striping, and data validation rules.
+Key differentiators:
+- 🔒 **Privacy-first** — all OCR and NLP runs locally on the server, no external AI calls for core features
+- ⚡ **Blazing fast** — in-process TTL caching, async endpoints, and optimized Firestore reads
+- 📱 **Cross-platform** — works as a web app and as an Android APK (via Capacitor)
+- ☁️ **Cloud-synced** — job data syncs across all your devices via Firebase Firestore
 
 ---
+
+## 🚀 Features
+
+### 📸 Local Multimodal Extraction
+Upload a screenshot or photo of any job poster — ZenJob uses **Tesseract OCR** to extract raw text locally and then applies advanced regex rules to parse:
+> Company · Role · Location · Job Type · Contact Email · Phone · Skills · Experience · Application Link
+
+### 🌐 Smart Web Scraper
+Provide any job listing URL and ZenJob automatically fetches, parses, and structures the information — no copy-paste required.
+
+### 📄 Live Resume Matcher & Compatibility Scoring
+Upload multiple resume versions (PDF / DOC / DOCX). ZenJob uses **TF-IDF Cosine Similarity** to score each job against your active resume and delivers:
+- Match score percentage
+- Matching & missing skills
+- Personalised career suggestions
+
+### 📊 Kanban-Style Command Dashboard
+Track every application through professional stages:
+`Applied` → `Test Process` → `Screening` → `Pending Response` → `Selected` → `Rejected`
+
+Modal-based deep analysis with glassmorphism UI — no page reloads.
+
+### 📥 Styled Excel Export
+Export your entire job pipeline as a formatted Excel workbook with a **Slate Indigo** colour theme, zebra-striping, and column-level data validation.
+
+### 🔗 Direct APK Download
+A backend proxy endpoint streams the latest Android APK directly from GitHub Releases — users download from the domain without seeing GitHub.
+
+---
+
+## 🛠 Tech Stack
+
+| Layer | Technology |
+|---|---|
+| **Frontend** | React 19, Vite 8, Vanilla CSS |
+| **Backend** | FastAPI, Uvicorn, Gunicorn |
+| **Auth & DB** | Firebase Auth, Cloud Firestore |
+| **OCR** | Tesseract OCR via `pytesseract` |
+| **NLP** | scikit-learn (TF-IDF Cosine Similarity) |
+| **PDF Parsing** | pdfplumber |
+| **Web Scraping** | requests + BeautifulSoup4 |
+| **Exports** | Pandas + OpenPyXL |
+| **Containerisation** | Docker |
+| **Hosting** | Render (Free tier — Docker + Static) |
+| **Mobile** | Capacitor (Android APK) |
+
+---
+
+## 🏗 Architecture
 
 ```mermaid
 graph TD
-    A[React Vite Frontend] -->|Auth / Firestore| B[Firebase]
-    A -->|API Requests| C[FastAPI Backend]
+    A[⚛️ React / Vite Frontend] -->|Firebase Auth & Firestore| B[(🔥 Firebase)]
+    A -->|HTTPS API Requests| C[🐍 FastAPI Backend]
     C -->|Local OCR| D[Tesseract Engine]
-    C -->|NLP Matching| E[scikit-learn TF-IDF]
-    C -->|Styled Reports| F[Pandas & OpenPyXL]
-    C -->|TTL Caching| G[In-Process Cache]
+    C -->|NLP Resume Matching| E[scikit-learn TF-IDF]
+    C -->|Styled Export| F[Pandas & OpenPyXL]
+    C -->|PDF Parsing| G[pdfplumber]
+    C -->|Web Scraping| H[Requests & BeautifulSoup4]
+    C -->|TTL Caching| I[In-Process Cache]
+    C -->|APK Proxy| J[GitHub Releases]
 ```
 
 ---
 
-## 📦 Installation & Deployment
+## ⚙️ Getting Started
 
-### Local Setup
-1. **Prerequisites**: Python 3.10+, Node.js 18+, Tesseract-OCR.
-2. **Backend**: 
-   ```bash
-   cd backend
-   pip install -r requirements.txt
-   uvicorn app.main:app --reload
-   ```
-3. **Frontend**:
-   ```bash
-   cd frontend
-   npm install
-   npm run dev
-   ```
+### Prerequisites
 
-### 🚀 Deployment (One-Click Blueprint)
-This project is pre-configured for **Render** using the `render.yaml` blueprint.
-1. Push your code to GitHub.
-2. Go to Render Dashboard -> **New Blueprint**.
-3. Connect your repo and follow the prompts for your Firebase credentials.
+| Tool | Version |
+|---|---|
+| Python | 3.10+ |
+| Node.js | 18+ |
+| Tesseract-OCR | 5.x |
+| Git | any |
+
+> **Install Tesseract:** [Windows Guide](https://github.com/UB-Mannheim/tesseract/wiki) · [Linux](https://tesseract-ocr.github.io/tessdoc/Installation.html) · [macOS](https://formulae.brew.sh/formula/tesseract)
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/Harshvardhan210/MagicCounter.git
+cd MagicCounter
+```
+
+### 2. Backend Setup
+
+```bash
+cd backend
+
+# Create and activate virtual environment
+python -m venv .venv
+# Windows:
+.venv\Scripts\activate
+# macOS/Linux:
+source .venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Copy and configure environment variables
+cp .env.example .env   # then fill in your values
+
+# Start the development server
+uvicorn app.main:app --reload --port 8000
+```
+
+Backend will be live at: `http://localhost:8000`
+Interactive API docs: `http://localhost:8000/docs`
+
+### 3. Frontend Setup
+
+```bash
+cd frontend
+
+# Install dependencies
+npm install
+
+# Copy and configure environment variables
+cp .env.example .env   # set VITE_API_BASE_URL=http://localhost:8000
+
+# Start the development server
+npm run dev
+```
+
+Frontend will be live at: `http://localhost:5173`
+
+---
+
+## 🚀 Deployment
+
+This project ships with a **Render Blueprint** (`render.yaml`) for one-click deployment.
+
+### Steps
+
+1. **Push** your code to GitHub.
+2. Go to [Render Dashboard](https://dashboard.render.com) → **New → Blueprint**.
+3. Connect your repository.
+4. Render will detect `render.yaml` and create both services automatically.
+5. In the Render UI, set the following secret environment variables when prompted:
+
+| Service | Variable | Description |
+|---|---|---|
+| Backend | `FIREBASE_SERVICE_ACCOUNT_JSON` | Full JSON content of your Firebase Admin SDK key |
+| Backend | `GEMINI_API_KEY` | Your Google Gemini API key (optional) |
+| Frontend | `VITE_API_BASE_URL` | The backend service URL from Render |
+
+---
+
+## 📱 Mobile APK
+
+ZenJob is available as an Android application built with **Capacitor**.
+
+- Download the latest APK directly from the [Live Site](https://magiccounter-frontend.onrender.com) using the **Download App** button.
+- Or grab it from [GitHub Releases](https://github.com/Harshvardhan210/MagicCounter/releases).
+
+> The APK connects to the same production backend as the web app, so your data syncs automatically.
+
+---
+
+## 🔐 Environment Variables
+
+### Backend (`backend/.env`)
+
+```env
+FIREBASE_SERVICE_ACCOUNT_JSON=<your-firebase-admin-sdk-json>
+ALLOWED_ORIGINS=http://localhost:5173
+GEMINI_API_KEY=<optional-gemini-key>
+PORT=8000
+```
+
+### Frontend (`frontend/.env`)
+
+```env
+VITE_API_BASE_URL=http://localhost:8000
+```
 
 ---
 
 ## 📄 License
-This project is licensed under the MIT License. Created with ❤️ by [Harshvardhan](https://github.com/Harshvardhan210).
+
+This project is licensed under the **MIT License**.
+
+---
+
+<div align="center">
+
+Made with ❤️ by [Harshvardhan](https://github.com/Harshvardhan210)
+
+⭐ Star this repo if you found it useful!
+
+</div>
