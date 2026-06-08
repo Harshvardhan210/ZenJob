@@ -28,8 +28,6 @@
 - [Tech Stack](#-tech-stack)
 - [Architecture](#-architecture)
 - [Getting Started](#-getting-started)
-- [Deployment](#-deployment)
-- [Mobile APK](#-mobile-apk)
 - [Environment Variables](#-environment-variables)
 - [License](#-license)
 
@@ -172,37 +170,6 @@ npm run dev
 ```
 
 Frontend will be live at: `http://localhost:5173`
-
----
-
-## 🚀 Deployment
-
-This project ships with a **Render Blueprint** (`render.yaml`) for one-click deployment.
-
-### Steps
-
-1. **Push** your code to GitHub.
-2. Go to [Render Dashboard](https://dashboard.render.com) → **New → Blueprint**.
-3. Connect your repository.
-4. Render will detect `render.yaml` and create both services automatically.
-5. In the Render UI, set the following secret environment variables when prompted:
-
-| Service | Variable | Description |
-|---|---|---|
-| Backend | `FIREBASE_SERVICE_ACCOUNT_JSON` | Full JSON content of your Firebase Admin SDK key |
-| Backend | `GEMINI_API_KEY` | Your Google Gemini API key (optional) |
-| Frontend | `VITE_API_BASE_URL` | The backend service URL from Render |
-
----
-
-## 📱 Mobile APK
-
-ZenJob is available as an Android application built with **Capacitor**.
-
-- Download the latest APK directly from the [Live Site](https://magiccounter-frontend.onrender.com) using the **Download App** button.
-- Or grab it from [GitHub Releases](https://github.com/Harshvardhan210/MagicCounter/releases).
-
-> The APK connects to the same production backend as the web app, so your data syncs automatically.
 
 ---
 
