@@ -15,7 +15,7 @@
 
 **ZenJob** transforms your job hunt from chaos into clarity. Upload job posters, scrape listings, match your resume — all locally, all securely.
 
-[🌐 Live Demo](https://magiccounter-frontend.onrender.com) · [📥 Download APK](#-mobile-apk) · [🐛 Report Bug](https://github.com/Harshvardhan210/MagicCounter/issues)
+[🌐 Live Demo](https://zenjob.space/) · [🐛 Report Bug](https://github.com/Harshvardhan210/MagicCounter/issues)
 
 </div>
 
